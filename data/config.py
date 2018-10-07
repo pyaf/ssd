@@ -21,11 +21,11 @@ cfg = {
     'max_iter': 120000,
     'feature_maps': [19, 10, 5, 3, 1],
     'min_dim': 300,
-    'steps': [16, 32, 64, 100, 300],
-    'min_sizes': [60, 80, 100, 120, 140],  # width on original img
+    'steps': [16, 32, 64, 100, 300],  # distance b/w prior centroids
+    'min_sizes': [60, 80, 100, 120, 140],  # prior widths
     'max_sizes': [80, 100, 120, 140, 160],
     # 'aspect_ratios': [[2, 3], [2, 3], [2, 3], [2], [2]],
-    'aspect_ratios': [[], [], [], [], []],
+    'aspect_ratios': [[0.5, 2], [0.5, 2], [0.5, 2], [0.5, 2], [0.5, 2]],
 
     'variance': [0.1, 0.2],
     'clip': True,

@@ -99,6 +99,7 @@ class SSD(nn.Module):
         # prod(l(x).shape)//4 = 5776, 2166, 600, 150, 36, 4 => 8732
         loc = torch.cat([o.view(o.size(0), -1) for o in loc], 1)  # [1, 34928]
         conf = torch.cat([o.view(o.size(0), -1) for o in conf], 1)  # [1, 17464]
+        # pdb.set_trace()
         if self.phase == "test":
             output = self.detect(
                 loc.view(loc.size(0), -1, 4),                   # [1, 8732, 4]
@@ -205,7 +206,7 @@ def build_ssd(phase, size=300, num_classes=2):
 
 if __name__ == '__main__':
     net = build_ssd("train", cfg["min_dim"], cfg["num_classes"])
-    test_input = torch.autograd.Variable(torch.rand(1, 1, 300, 300))
+    test_input = torch.rand(1, 1, 300, 300)
     loc, conf, priors = net(test_input)
     print(loc.shape, conf.shape, priors.shape)
     pdb.set_trace()

@@ -52,7 +52,7 @@ def get_prediction_str(detections, threshold):
 if __name__ == "__main__":
     # load model
     use_cuda = True
-    trained_model_path = 'weights/vast/model50.pth'
+    trained_model_path = 'weights/vast7oct/model20.pth'
     device = torch.device("cuda" if use_cuda else "cpu")
     if use_cuda:
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     # load data
     root = "data/stage_1_test_images/"
     sample_submission_path = "data/stage_1_sample_submission.csv"
-    sub_path = "data/submission/" + str(datetime.now()).replace(" ", "") + 'model50/'
+    sub_path = "data/submission/" + str(datetime.now()).replace(" ", "") + 'vast7octmodel20/'
     os.mkdir(sub_path)
     testset = TestDataset(root, sample_submission_path)
 
@@ -78,9 +78,9 @@ if __name__ == "__main__":
     num_images = len(testset)
     test_sub = pd.read_csv(sample_submission_path)
     subs = {}
-    base_th = 0.25
-    th_jump = 0.03
-    th_range = 7
+    base_th = 0.30
+    th_jump = 0.05
+    th_range = 6
     thresholds = [base_th + th_jump * i for i in range(th_range)]
     print("Using thresholds:", thresholds)
     for i in range(th_range):

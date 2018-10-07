@@ -28,7 +28,7 @@ def Epoch(phase, epoch, batch_size):
     logging.info("Starting %s epoch: %d " % (phase, epoch))
     start = time.time()
     net.train(phase == "train")
-    dataloader = dataloaders[phase]
+    dataloader = provider(phase, batch_size=batch_size, num_workers=num_workers)
     running_l_loss, running_c_loss, running_mAP = 0, 0, 0
     total_iters = len(dataloader)
     for iteration, batch in enumerate(dataloader):
@@ -105,10 +105,6 @@ if cuda:
     net = net.cuda()
     cudnn.benchmark = True
 
-dataloaders = {
-    "train": provider(batch_size=train_batch_size, num_workers=num_workers),
-    "val": provider("val", batch_size=val_batch_size, num_workers=num_workers),
-}
 
 for epoch in range(start_epoch, num_epochs):
     logger.info("Starting epoch: %d", epoch)

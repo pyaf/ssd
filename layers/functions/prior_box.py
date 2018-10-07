@@ -38,6 +38,8 @@ class PriorBox(object):
                 # unit center x,y
                 cx = (j + 0.5) / f_k
                 cy = (i + 0.5) / f_k
+                # print(f, cx, cy)
+                # continue
 
                 # aspect_ratio: 1
                 # rel size: min_size

@@ -1,3 +1,4 @@
+import pdb, traceback
 import torch
 from torchvision import transforms
 import cv2
@@ -48,8 +49,13 @@ class Compose(object):
         self.transforms = transforms
 
     def __call__(self, img, boxes=None, labels=None):
-        for t in self.transforms:
-            img, boxes, labels = t(img, boxes, labels)
+        try:
+            # pdb.set_trace()
+            for t in self.transforms:
+                img, boxes, labels = t(img, boxes, labels)
+        except:
+            traceback.print_exc()
+            pdb.set_trace()
         return img, boxes, labels
 
 
@@ -66,6 +72,16 @@ class Lambda(object):
 
 class ConvertFromInts(object):
     def __call__(self, image, boxes=None, labels=None):
+        return image.astype(np.float32), boxes, labels
+
+
+class Normalize(object):
+    def __init__(self):
+        pass
+
+    def __call__(self, image, boxes=None, labels=None):
+        image = image.astype(np.float32)
+        image = image / 255.
         return image.astype(np.float32), boxes, labels
 
 
@@ -94,7 +110,7 @@ class ToAbsoluteCoords(object):
 class ToPercentCoords(object):
     def __call__(self, image, boxes=None, labels=None):
         # import pdb; pdb.set_trace()
-        height, width = image.shape
+        height, width, _ = image.shape
         boxes[:, 0] /= width
         boxes[:, 2] /= width
         boxes[:, 1] /= height
@@ -233,7 +249,7 @@ class RandomSampleCrop(object):
         )
 
     def __call__(self, image, boxes=None, labels=None):
-        height, width = image.shape
+        height, width, channels = image.shape
         while True:
             # randomly choose a mode
             mode = random.choice(self.sample_options)
@@ -339,7 +355,7 @@ class Expand(object):
 
 class RandomMirror(object):
     def __call__(self, image, boxes, classes):
-        _, width = image.shape
+        _, width, _ = image.shape
         if random.randint(2):
             image = image[:, ::-1]
             boxes = boxes.copy()
@@ -403,10 +419,10 @@ class SSDAugmentation(object):
         self.size = size
         self.augment = Compose([
             ConvertFromInts(),
-            # ToAbsoluteCoords(),  # not required for rsna competition, as w & h not know beforehand
-            # PhotometricDistort(),
-            # Expand(self.mean),
-            # RandomSampleCrop(),
+            # ToAbsoluteCoords(), # already in abs coordinates
+            PhotometricDistort(),
+            Expand(self.mean),
+            RandomSampleCrop(),
             RandomMirror(),
             ToPercentCoords(),
             Resize(self.size),
@@ -415,3 +431,24 @@ class SSDAugmentation(object):
 
     def __call__(self, img, boxes, labels):
         return self.augment(img, boxes, labels)
+
+
+# augmentation = iaa.Sequential([
+#     iaa.OneOf([ ## geometric transform
+#         iaa.Affine(
+#             scale={"x": (0.98, 1.02), "y": (0.98, 1.04)},
+#             translate_percent={"x": (-0.02, 0.02), "y": (-0.04, 0.04)},
+#             rotate=(-2, 2),
+#             shear=(-1, 1),
+#         ),
+#         iaa.PiecewiseAffine(scale=(0.001, 0.025)),
+#     ]),
+#     iaa.OneOf([ ## brightness or contrast
+#         iaa.Multiply((0.9, 1.1)),
+#         iaa.ContrastNormalization((0.9, 1.1)),
+#     ]),
+#     iaa.OneOf([ ## blur or sharpen
+#         iaa.GaussianBlur(sigma=(0.0, 0.1)),
+#         iaa.Sharpen(alpha=(0.0, 0.1)),
+#     ]),
+# ])
