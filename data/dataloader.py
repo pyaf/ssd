@@ -1,10 +1,3 @@
-"""Load image/labels/boxes from an annotation file.
-
-The list file is like:
-
-    img.jpg xmin ymin xmax ymax label xmin ymin xmax ymax label ...
-"""
-from __future__ import print_function
 import pydicom
 import os
 import pdb, traceback
@@ -20,7 +13,18 @@ from sklearn.model_selection import train_test_split
 from utils.augmentations import SSDAugmentation
 from data.config import HOME, cfg, MEANS
 
-CLASSES = ("abnormal",)
+CLASSES = ("Lung Opacity",)  # COMMA IS FUCKING IMPORTANT
+
+# CLASSES = ("Lung Opacity", "No Lung Opacity / Not Normal")
+class_to_idx = {
+    "Normal": -1,
+    "Lung Opacity": 0,
+    "No Lung Opacity / Not Normal": 1
+}
+
+# as Normal and No Lung Opacity / Not Normal have same Target (0), it doesn't make any
+# diff if we include these two as seperate, their target bbox will always be [0,0,0,0] 
+# with target label as -1 :(
 DATA_ROOT = os.path.join(HOME, "data/")
 print("DATA_ROOT: ", DATA_ROOT)
 
@@ -47,42 +51,20 @@ def detection_collate(batch):
 
 
 class SSDDataset(data.Dataset):
-    def __init__(self, root, transform, phase="train"):
+    def __init__(self, transform, phase="train"):
         """
         Args:
           phase: (boolean) train or val.
           transform: ([transforms]) image transforms.
           input_size: (int) model input size.
         """
-        self.root = root
+        self.root = os.path.join(DATA_ROOT, "stage_1_train_images/")
         self.name = "RSNADataset"
         self.phase = phase
         self.transform = transform
-        df = pd.read_csv("data/stage_1_train_labels.csv")
-        # df = df[df["Target"] == 0]
-        df.reset_index(drop=True, inplace=True)
-        df_groups = df.groupby(["patientId"]).groups
-        fnames = list(df_groups.keys())
-        random.seed(69)
-        random.shuffle(fnames)
-        # fnames = fnames[:500]
-        train_fnames, val_fnames = train_test_split(fnames, test_size=0.1)
-        self.fnames = train_fnames if phase == "train" else val_fnames
-        self.boxes, self.labels = [], []
-
-        for name in self.fnames:
-            indices = df_groups[name]
-            box = []
-            for idx in indices:
-                line = df.iloc[idx]
-                x, y = line["x"], line["y"]
-                box.append([x, y, (x + line["width"]), (y + line["height"])])
-            if line["Target"]:
-                self.labels.append(np.zeros(len(box)))
-                self.boxes.append(box)
-            else:
-                self.labels.append(np.array([-1]))
-                self.boxes.append([0., 0., 0., 0.])
+        self.fnames = np.load(os.path.join(DATA_ROOT, 'npy_data', phase + '_fnames.npy'))
+        self.boxes = np.load(os.path.join(DATA_ROOT, 'npy_data', phase + '_boxes.npy'))
+        self.labels = np.load(os.path.join(DATA_ROOT, 'npy_data', phase + '_labels.npy'))
         self.num_samples = len(self.fnames)
 
     def __getitem__(self, idx):
@@ -114,9 +96,8 @@ class SSDDataset(data.Dataset):
 
 
 def provider(phase="train", batch_size=8, num_workers=4):
-    root = DATA_ROOT + "stage_1_train_images/"
     dataset = SSDDataset(
-        root=root, phase=phase, transform=SSDAugmentation(cfg["min_dim"], MEANS)
+        phase=phase, transform=SSDAugmentation(cfg["min_dim"], MEANS)
     )
     data_loader = data.DataLoader(
         dataset,
@@ -131,6 +112,7 @@ def provider(phase="train", batch_size=8, num_workers=4):
 
 
 if __name__ == "__main__":
+    os.environ['CUDA_VISIBLE_DEVICES'] = "None"
     dataloader = provider(phase='val', num_workers=0)
     total_iters = dataloader.__len__()
     for iter_, batch in enumerate(dataloader):

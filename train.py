@@ -4,13 +4,12 @@ import time
 import logging
 import torch
 import torch.optim as optim
-from datetime import timedelta
 from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
 
 from ssd import build_ssd
 from layers.modules import MultiBoxLoss
-from tensorboard_logger import configure, log_value
+from tensorboard_logger import configure
 from data.config import cfg
 from data.dataloader import provider
 from utils import weights_init
@@ -19,9 +18,6 @@ from extras import iter_log, epoch_log, logger
 
 def forward(batch):
     images, targets = batch
-    with torch.no_grad():
-        images = Variable(images)
-        targets = [Variable(ann) for ann in targets]
     if cuda:
         images = images.cuda()
         targets = [ann.cuda() for ann in targets]
@@ -54,11 +50,11 @@ def Epoch(phase, epoch, batch_size):
 
 
 cuda = torch.cuda.is_available()
-save_folder = "weights/test/"
+save_folder = "weights/6oct/"
 basenet_path = "weights/vgg16_reducedfc.pth"
 resume = False  # if True, will resume from weights/ckpt.pth
-train_batch_size = 4
-val_batch_size = 4
+train_batch_size = 8
+val_batch_size = 8
 num_workers = 4
 lr = 1e-3  # at 5e-4 it converges at 800 epochs
 momentum = 0.9
@@ -137,4 +133,24 @@ for epoch in range(start_epoch, num_epochs):
 # batch_size 2 = 1.2MB, 8 = 2.2, 16 = 4.0MB
 """
 NUM_WORKERS SET TO ZERO IN DATALOADER FOR TESTING
+
+vast.ai help:
+
+df -h --total
+export KAGGLE_USERNAME=rishabhiitbhu
+export KAGGLE_KEY=f8c51d0501658d465f6f72e18b1a4aa5
+pip install kaggle pydicom tensorboard-logger pandas sklearn tensorboard
+apt-get install python-opencv unzip htop nano
+kaggle competitions download -c rsna-pneumonia-detection-challenge
+
+unzip -q -o stage_1_test_images.zip -d stage_1_test_images
+rm stage_1_test_images.zip
+unzip -q -o stage_1_train_images.zip -d stage_1_train_images
+rm stage_1_train_images.zip
+
+wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
+unzip ngrok-stable-linux-amd64.zip
+chmod +x ngrok
+./ngrok http 6006
+
 """

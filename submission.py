@@ -50,9 +50,8 @@ def get_prediction_str(detections, threshold):
 
 
 if __name__ == "__main__":
-    # load model
     use_cuda = True
-    trained_model_path = 'weights/vast/model50.pth'
+    trained_model_path = 'weights/vast/model.pth'
     device = torch.device("cuda" if use_cuda else "cpu")
     if use_cuda:
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
@@ -61,43 +60,29 @@ if __name__ == "__main__":
     num_classes = len(CLASSES) + 1  # +1 background
     net = build_ssd('test', 300, num_classes)  # initialize SSD
     state = torch.load(trained_model_path)
-    # state = torch.load(trained_model_path, map_location='cpu')
+    # state = torch.load(trained_model_path, map_location='')
     net.load_state_dict(state["state_dict"])
     net.eval()
-    net = net.to(device)
     print('Finished loading model!')
-
+    net = net.to(device)
+    threshold = get_best_th(net)
     # load data
     root = "data/stage_1_test_images/"
     sample_submission_path = "data/stage_1_sample_submission.csv"
-    sub_path = "data/submission/" + str(datetime.now()).replace(" ", "") + 'model50/'
+    sub_path = "data/submission/" + str(datetime.now()).replace(" ", "") + '/'
     os.mkdir(sub_path)
     testset = TestDataset(root, sample_submission_path)
-
     # cudnn.benchmark = True
     num_images = len(testset)
     test_sub = pd.read_csv(sample_submission_path)
-    subs = {}
-    base_th = 0.25
-    th_jump = 0.03
-    th_range = 7
-    thresholds = [base_th + th_jump * i for i in range(th_range)]
-    print("Using thresholds:", thresholds)
-    for i in range(th_range):
-        subs[i] = test_sub.copy()
-
-    # predictions
     for i in tqdm(range(num_images)):
         img = testset.pull_image(i)
         x = torch.Tensor(img).view(1, 3, 300, 300)
         x = x.to(device)
         y = net(x)      # forward pass
         detections = y.data
-        for idx, th in enumerate(thresholds):
-            subs[idx].at[i, 'PredictionString'] = get_prediction_str(detections, th)
-
-    for idx, th in enumerate(thresholds):
-        subs[idx].to_csv(sub_path + 'submission-%0.2f.csv' % th, index=False)
+        test_sub.at[i, 'PredictionString'] = get_prediction_str(detections, threshold)
+    test_sub.to_csv(sub_path + 'submission-%0.2 f.csv' % threshold, index=False)
 
     '''
     total test images: 2463
