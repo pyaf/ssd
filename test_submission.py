@@ -15,11 +15,12 @@ import torch.utils.data as data
 
 
 class TestDataset(data.Dataset):
-    def __init__(self, root, sample_submission_path):
+    def __init__(self, root, sample_submission_path, mean=(104, 117, 123)):
         self.root = root
         df = pd.read_csv(sample_submission_path)
         self.fnames = list(df['patientId'])
         self.num_samples = len(self.fnames)
+        self.mean = np.array(mean, dtype=np.float32)
 
     def __getitem__(self, idx):
         pass
@@ -31,7 +32,8 @@ class TestDataset(data.Dataset):
         img = dcm_data.pixel_array
         img = cv2.resize(img, (300, 300)).astype(np.float32)
         img = np.expand_dims(img, 0).repeat(3, axis=0)
-        img = img / 255.
+        # img -= self.mean
+        img /= 255.
         return img
 
     def __len__(self):
@@ -52,7 +54,7 @@ def get_prediction_str(detections, threshold):
 if __name__ == "__main__":
     # load model
     use_cuda = True
-    trained_model_path = 'weights/vast7oct/model20.pth'
+    trained_model_path = 'weights/vast8oct2/model10.pth'
     device = torch.device("cuda" if use_cuda else "cpu")
     if use_cuda:
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
@@ -60,8 +62,7 @@ if __name__ == "__main__":
         torch.set_default_tensor_type('torch.FloatTensor')
     num_classes = len(CLASSES) + 1  # +1 background
     net = build_ssd('test', 300, num_classes)  # initialize SSD
-    state = torch.load(trained_model_path)
-    # state = torch.load(trained_model_path, map_location='cpu')
+    state = torch.load(trained_model_path, map_location=lambda storage, loc: storage)
     net.load_state_dict(state["state_dict"])
     net.eval()
     net = net.to(device)
@@ -70,7 +71,7 @@ if __name__ == "__main__":
     # load data
     root = "data/stage_1_test_images/"
     sample_submission_path = "data/stage_1_sample_submission.csv"
-    sub_path = "data/submission/" + str(datetime.now()).replace(" ", "") + 'vast7octmodel20/'
+    sub_path = "data/submission/" + str(datetime.now()).replace(" ", "") + 'vast8oct2model20/'
     os.mkdir(sub_path)
     testset = TestDataset(root, sample_submission_path)
 
@@ -104,3 +105,7 @@ if __name__ == "__main__":
     On CPU takes around 1 Hour 40 mins.
     On GPU takes around 1 Hour, 843 MB GPU memory, batch_size=1
     '''
+
+'''
+upto vast8oct2 models were trained with img /= 255 normalization, afterwards by img -= mean
+'''

@@ -1,6 +1,23 @@
+import pdb, traceback
 import numpy as np
 
 # helper function to calculate IoU
+
+def change_order(box, method="XYXY2XYWH"):
+    '''XYXY2XYWH = xmin, ymin, xmax, ymax => xmin, ymin, w, h'''
+    try:
+        if method == "XYXY2XYWH":
+            xmin, ymin, xmax, ymax = box
+            box = [xmin, ymin, xmax - xmin, ymax - ymin]
+            return [x.item() * 300 for x in box]
+            # box = box.view(-1, 4)
+            # a = box[:, :2]
+            # b = box[:, 2:]
+            # return torch.cat([a, b - a + 1], dim=1)
+    except:
+        traceback.print_exc()
+        pdb.set_trace()
+    return box
 
 
 def iou(box1, box2):
@@ -21,6 +38,23 @@ def iou(box1, box2):
         intersect = (xi2-xi1) * (yi2-yi1)
         union = area1 + area2 - intersect
         return intersect / union
+
+
+def get_mAP(detections, targets, CLS_THRESH):
+    try:
+        boxes_pred = []
+        boxes_true = []
+        scores = []
+        for i in np.where(detections[1, :, 0] >= CLS_THRESH)[0]:
+            boxes_pred.append(change_order(detections[1, i, 1:]))
+            scores.append(detections[1, i, 0].item())
+        for i in range(len(targets)):
+            if targets[i, -1] != -1:
+                boxes_true.append(change_order(targets[i][:-1]))
+        return map_iou(np.array(boxes_true), np.array(boxes_pred), scores)
+    except:
+        traceback.print_exc()
+        pdb.set_trace()
 
 
 def map_iou(boxes_true, boxes_pred, scores, thresholds=[0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]):

@@ -421,12 +421,63 @@ class SSDAugmentation(object):
         self.mean = mean
         self.size = size
         self.phase = phase
+        seq = iaa.Sequential([
+            iaa.OneOf([  # geometric transform
+                iaa.Affine(
+                    scale={"x": (0.98, 1.02), "y": (0.98, 1.04)},
+                    translate_percent={"x": (-0.02, 0.02), "y": (-0.04, 0.04)},
+                    rotate=(-2, 2),
+                    shear=(-1, 1),
+                ),
+                iaa.PiecewiseAffine(scale=(0.001, 0.025)),
+            ]),
+            # iaa.OneOf([  # brightness or contrast
+            #     iaa.Multiply((0.9, 1.1)),
+            #     iaa.ContrastNormalization((0.9, 1.1)),
+            # ]),
+            # iaa.OneOf([  # blur or sharpen
+            #     iaa.GaussianBlur(sigma=(0.0, 0.1)),
+            #     iaa.Sharpen(alpha=(0.0, 0.1)),
+            # ]),
+        ])
+        self.seq_det = seq.to_deterministic()
+        transforms = [
+            ToPercentCoords(),
+            Resize(self.size),
+            SubtractMeans(self.mean)
+        ]
+        # transforms = []
+        self.post_aug = Compose(transforms)
+
+    def bb2np(self, aug_bbs):
+        return np.array([
+            [bb.x1, bb.y1, bb.x2, bb.y2] for bb in aug_bbs.bounding_boxes]
+            ).astype('float')
+
+    def __call__(self, img, boxes, labels):
+        try:
+            aug_img = self.seq_det.augment_images([img])[0]
+            if labels[0, 0] != -1:
+                bb_list = [ia.BoundingBox(* list(box)) for box in boxes]
+                bbs = ia.BoundingBoxesOnImage(bb_list, shape=img.shape)
+                aug_bbs = self.seq_det.augment_bounding_boxes([bbs])[0]
+                boxes = self.bb2np(aug_bbs)
+            return self.post_aug(aug_img, boxes, labels)
+        except:
+            traceback.print_exc()
+            pdb.set_trace()
+
+
+
+
+
+'''
         transforms = [ConvertFromInts()]
         if self.phase == "train":
             transforms.extend([
                 PhotometricDistort(),
-                # Expand(self.mean),
-                # RandomSampleCrop(),
+                Expand(self.mean),
+                RandomSampleCrop(),
                 RandomMirror()]
                 )
         transforms.extend([
@@ -436,27 +487,4 @@ class SSDAugmentation(object):
             ])
         # transforms = []
         self.augment = Compose(transforms)
-
-    def __call__(self, img, boxes, labels):
-        return self.augment(img, boxes, labels)
-
-
-# augmentation = iaa.Sequential([
-#     iaa.OneOf([ ## geometric transform
-#         iaa.Affine(
-#             scale={"x": (0.98, 1.02), "y": (0.98, 1.04)},
-#             translate_percent={"x": (-0.02, 0.02), "y": (-0.04, 0.04)},
-#             rotate=(-2, 2),
-#             shear=(-1, 1),
-#         ),
-#         iaa.PiecewiseAffine(scale=(0.001, 0.025)),
-#     ]),
-#     iaa.OneOf([ ## brightness or contrast
-#         iaa.Multiply((0.9, 1.1)),
-#         iaa.ContrastNormalization((0.9, 1.1)),
-#     ]),
-#     iaa.OneOf([ ## blur or sharpen
-#         iaa.GaussianBlur(sigma=(0.0, 0.1)),
-#         iaa.Sharpen(alpha=(0.0, 0.1)),
-#     ]),
-# ])
+'''

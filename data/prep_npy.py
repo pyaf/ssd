@@ -47,14 +47,15 @@ if __name__ == '__main__':
         "Lung Opacity": 0,
         "No Lung Opacity / Not Normal": 1
     }
+    print('Reading, gouping, spliting data...')
     df = pd.read_csv(os.path.join(DATA_ROOT, "stage_1_train_labels.csv"))
     class_df = pd.read_csv(os.path.join(DATA_ROOT, 'stage_1_detailed_class_info.csv'))
-    df_groups = df.groupby(["patientId"]).groups
-    fnames = list(df_groups.keys())
-    random.seed(69)
-    random.shuffle(fnames)
-    train_fnames, val_fnames = train_test_split(
-        fnames, test_size=0.1, random_state=69)  # random_state is FUCKING IMPORTANT
+    df['class'] = class_df['class']
+    df_groupby = df.groupby("patientId")
+    df_groups = df_groupby.groups
+    image_df = df_groupby.apply(lambda x: x.sample(1))
+    train_df, val_df = train_test_split(image_df, test_size=0.15, random_state=69, stratify=image_df['class'])  # random_state is FUCKING IMPORTANT
+    train_fnames, val_fnames = list(train_df.patientId), list(val_df.patientId)
     save_npy(val_fnames, "val")
     save_npy(train_fnames, "train")
 

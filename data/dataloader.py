@@ -49,7 +49,7 @@ def detection_collate(batch):
 
 
 class SSDDataset(data.Dataset):
-    def __init__(self, transform, phase="train"):
+    def __init__(self, phase="train"):
         """
         Args:
           phase: (boolean) train or val.
@@ -59,7 +59,7 @@ class SSDDataset(data.Dataset):
         self.root = os.path.join(DATA_ROOT, "stage_1_train_images/")
         self.name = "RSNADataset"
         self.phase = phase
-        self.transform = transform
+        self.transform = SSDAugmentation(phase, cfg["min_dim"], MEANS)
         self.fnames = np.load(os.path.join(DATA_ROOT, 'npy_data', phase + '_fnames.npy'))
         self.boxes = np.load(os.path.join(DATA_ROOT, 'npy_data', phase + '_boxes.npy'))
         self.labels = np.load(os.path.join(DATA_ROOT, 'npy_data', phase + '_labels.npy'))
@@ -84,6 +84,7 @@ class SSDDataset(data.Dataset):
         img = img.repeat(3, axis=-1)
         if self.transform is not None:
             img, boxes, labels = self.transform(img, boxes, labels)
+        img = img.transpose(-1, 0, 1)
         target = np.hstack((boxes, labels))
         return fname, torch.from_numpy(img), target
 
@@ -92,9 +93,7 @@ class SSDDataset(data.Dataset):
 
 
 def provider(phase="train", batch_size=8, num_workers=4):
-    dataset = SSDDataset(
-        phase=phase, transform=SSDAugmentation(cfg["min_dim"], MEANS)
-    )
+    dataset = SSDDataset(phase=phase)
     data_loader = data.DataLoader(
         dataset,
         batch_size,
@@ -112,6 +111,6 @@ if __name__ == "__main__":
     dataloader = provider(phase='val', num_workers=0)
     total_iters = dataloader.__len__()
     for iter_, batch in enumerate(dataloader):
-        images, boxes = batch
+        fnames, images, boxes = batch
         print("%d/%d" % (iter_, total_iters), images.size(), len(boxes[0]))
         print(boxes)

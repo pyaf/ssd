@@ -24,30 +24,33 @@ def forward(images, targets):
     return loss_l, loss_c
 
 
-def Epoch(phase, epoch, batch_size):
-    logging.info("Starting %s epoch: %d " % (phase, epoch))
-    start = time.time()
-    net.train(phase == "train")
-    dataloader = dataloaders[phase]
-    running_l_loss, running_c_loss, running_mAP = 0, 0, 0
-    total_iters = len(dataloader)
-    for iteration, batch in enumerate(dataloader):
-        fnames, images, targets = batch
-        loss_l, loss_c = forward(images, targets)
-        if phase == "train":
-            loss = loss_l + loss_c
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-        running_l_loss += loss_l.item()
-        running_c_loss += loss_c.item()
-        # running_mAP += map_iou(boxes_true, boxes_pred, scores)
-        if iteration % 10 == 0:
-            iter_log(phase, epoch, iteration, total_iters, loss_l, loss_c, start)
-    epoch_l_loss = running_l_loss / (batch_size * total_iters)
-    epoch_c_loss = running_c_loss / (batch_size * total_iters)
-    epoch_log(phase, epoch, epoch_l_loss, epoch_c_loss, start)
-    dataloader = None
+def Epoch(epoch, batch_size):
+    logging.info("Starting epoch: %d " % epoch)
+    for phase in ['train', 'val']:
+        logging.info("Phase: %s " % phase)
+        phase_bs = batch_size[phase]
+        start = time.time()
+        net.train(phase == "train")
+        dataloader = dataloaders[phase]
+        running_l_loss, running_c_loss, running_mAP = 0, 0, 0
+        total_iters = len(dataloader)
+        for iteration, batch in enumerate(dataloader):
+            fnames, images, targets = batch
+            loss_l, loss_c = forward(images, targets)
+            if phase == "train":
+                loss = loss_l + loss_c
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+            running_l_loss += loss_l.item()
+            running_c_loss += loss_c.item()
+            # running_mAP += map_iou(boxes_true, boxes_pred, scores)
+            if iteration % 10 == 0:
+                iter_log(phase, epoch, iteration, total_iters, loss_l, loss_c, start)
+        epoch_l_loss = running_l_loss / (phase_bs * total_iters)
+        epoch_c_loss = running_c_loss / (phase_bs * total_iters)
+        epoch_log(phase, epoch, epoch_l_loss, epoch_c_loss, start)
+        dataloader = None
     return epoch_l_loss + epoch_c_loss
 
 
@@ -55,8 +58,10 @@ cuda = torch.cuda.is_available()
 save_folder = "weights/6oct/"
 basenet_path = "weights/vgg16_reducedfc.pth"
 resume = False  # if True, will resume from weights/ckpt.pth
-train_batch_size = 8
-val_batch_size = 8
+batch_size = {
+    'train': 8,
+    'val': 8
+}
 num_workers = 4
 lr = 1e-3  # at 5e-4 it converges at 800 epochs
 momentum = 0.9
@@ -68,8 +73,10 @@ pos_prior_threshold = 0.3
 
 testing = False
 if testing:
-    train_batch_size = 2
-    val_batch_size = 2
+    batch_size = {
+        'train': 2,
+        'val': 2
+    }
     num_workers = 0
 
 configure(os.path.join(save_folder, "logs"), flush_secs=5)
@@ -106,14 +113,13 @@ if cuda:
     cudnn.benchmark = True
 
 dataloaders = {
-    "train": provider(batch_size=train_batch_size, num_workers=num_workers),
-    "val": provider("val", batch_size=val_batch_size, num_workers=num_workers),
+    "train": provider(batch_size=batch_size["train"], num_workers=num_workers),
+    "val": provider("val", batch_size=batch_size['val'], num_workers=num_workers),
 }
 
 for epoch in range(start_epoch, num_epochs):
     logger.info("Starting epoch: %d", epoch)
-    Epoch("train", epoch, train_batch_size)
-    val_loss = Epoch("val", epoch, val_batch_size)
+    val_loss = Epoch(epoch, batch_size)
     state = {
         "epoch": epoch,
         "best_loss": best_loss,
@@ -126,7 +132,7 @@ for epoch in range(start_epoch, num_epochs):
         torch.save(state, os.path.join(save_folder, "model.pth"))
     torch.save(state, os.path.join(save_folder, "ckpt.pth"))
 
-    if epoch % 50 == 0:
+    if epoch % 10 == 0:
         state = torch.load(os.path.join(save_folder, "model.pth"))
         torch.save(state, os.path.join(save_folder, "model%d.pth" % epoch))
 
