@@ -1,9 +1,9 @@
 import pdb
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
+import torch.nn as nn
 from layers import PriorBox, L2Norm, Detect
 from data.config import cfg
 import os
@@ -108,11 +108,11 @@ class SSD(nn.Module):
                 self.priors.type(type(x.data))                  # default boxes
             )
         else:
-            output = (
+            output = [
                 loc.view(loc.size(0), -1, 4),
                 conf.view(conf.size(0), -1, self.num_classes),
                 self.priors
-            )
+            ]
         return output
 
     def load_weights(self, base_file):

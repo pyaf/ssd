@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 import torch.backends.cudnn as cudnn
-from datetime import datetime
+import time
 import pydicom
 from ssd import build_ssd
 from data.dataloader import CLASSES
@@ -31,9 +31,10 @@ class TestDataset(data.Dataset):
         dcm_data = pydicom.read_file(self.root + fname + ".dcm")
         img = dcm_data.pixel_array
         img = cv2.resize(img, (300, 300)).astype(np.float32)
-        img = np.expand_dims(img, 0).repeat(3, axis=0)
-        # img -= self.mean
-        img /= 255.
+        img = np.expand_dims(img, -1).repeat(3, axis=-1)
+        img -= self.mean
+        img = img.transpose(-1, 0, 1)
+#         img /= 255.
         return img
 
     def __len__(self):
@@ -54,7 +55,7 @@ def get_prediction_str(detections, threshold):
 if __name__ == "__main__":
     # load model
     use_cuda = True
-    trained_model_path = 'weights/vast8oct2/model10.pth'
+    trained_model_path = 'weights/8oct3/model30.pth'
     device = torch.device("cuda" if use_cuda else "cpu")
     if use_cuda:
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
@@ -71,7 +72,7 @@ if __name__ == "__main__":
     # load data
     root = "data/stage_1_test_images/"
     sample_submission_path = "data/stage_1_sample_submission.csv"
-    sub_path = "data/submission/" + str(datetime.now()).replace(" ", "") + 'vast8oct2model20/'
+    sub_path = "data/submission/" + str(time.time()) + trained_model_path.replace('/', '') + '/'
     os.mkdir(sub_path)
     testset = TestDataset(root, sample_submission_path)
 
@@ -79,12 +80,9 @@ if __name__ == "__main__":
     num_images = len(testset)
     test_sub = pd.read_csv(sample_submission_path)
     subs = {}
-    base_th = 0.30
-    th_jump = 0.05
-    th_range = 6
-    thresholds = [base_th + th_jump * i for i in range(th_range)]
+    thresholds = [0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55]
     print("Using thresholds:", thresholds)
-    for i in range(th_range):
+    for i in range(len(thresholds)):
         subs[i] = test_sub.copy()
 
     # predictions
