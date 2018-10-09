@@ -89,12 +89,13 @@ class SSDDataset(data.Dataset):
         return fname, torch.from_numpy(img), target
 
     def __len__(self):
+        # self.num_samples = 1000  # modify when testing (don't return anything)
         return self.num_samples
 
 
 def provider(phase="train", batch_size=8, num_workers=4):
     dataset = SSDDataset(phase=phase)
-    data_loader = data.DataLoader(
+    dataloader = data.DataLoader(
         dataset,
         batch_size,
         num_workers=num_workers,
@@ -103,7 +104,7 @@ def provider(phase="train", batch_size=8, num_workers=4):
         pin_memory=True,
     )
 
-    return data_loader
+    return dataloader
 
 
 if __name__ == "__main__":

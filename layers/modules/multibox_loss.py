@@ -35,13 +35,13 @@ class MultiBoxLoss(nn.Module):
         self,
         num_classes,
         overlap_thresh,
-        prior_for_matching,
-        bkg_label,
-        neg_mining,
         neg_pos,
-        neg_overlap,
-        encode_target,
         use_gpu=True,
+        prior_for_matching=True,
+        bkg_label=0,
+        neg_mining=True,
+        neg_overlap=0.5,
+        encode_target=False,
     ):
         super(MultiBoxLoss, self).__init__()
         self.num_classes = num_classes

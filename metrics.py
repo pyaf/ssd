@@ -290,7 +290,7 @@ def plot_pr_curve(
     """Simple plotting helper function"""
 
     if ax is None:
-        plt.figure(figsize=(10,8))
+        plt.figure(figsize=(10, 8))
         ax = plt.gca()
 
     if color is None:
@@ -304,6 +304,7 @@ def plot_pr_curve(
     return ax
 
 def get_mAP(gt_boxes, pred_boxes, save_plot=False):
+    print('Calculating mAP...')
     start_time = time.time()
     ax = None
     avg_precs = []

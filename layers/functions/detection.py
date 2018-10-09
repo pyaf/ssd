@@ -1,3 +1,4 @@
+import pdb
 import torch
 from torch.autograd import Function
 from ..box_utils import decode, nms
@@ -10,7 +11,7 @@ class Detect(Function):
     scores and threshold to a top_k number of output predictions for both
     confidence score and locations.
     """
-    def __init__(self, num_classes, bkg_label, top_k, conf_thresh, nms_thresh):
+    def __init__(self, num_classes, top_k, conf_thresh, nms_thresh, bkg_label=0):
         self.num_classes = num_classes
         self.background_label = bkg_label
         self.top_k = top_k
@@ -22,6 +23,7 @@ class Detect(Function):
         self.variance = cfg['variance']
 
     def forward(self, loc_data, conf_data, prior_data):
+        # pdb.set_trace()
         """
         Args:
             loc_data: (tensor) Loc preds from loc layers
