@@ -1,5 +1,6 @@
 import matplotlib; matplotlib.use('Agg')
 import os
+import numpy as np
 import pdb
 import traceback
 import torch
@@ -14,7 +15,7 @@ if __name__ == "__main__":
     use_cuda = True
     batch_size = 4
     num_workers = 4
-    trained_model_path = 'weights/vast8oct3/model20.pth'
+    trained_model_path = 'weights/9oct2/model.pth'
     device = torch.device("cuda" if use_cuda else "cpu")
     if use_cuda:
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
@@ -30,8 +31,11 @@ if __name__ == "__main__":
     dataloader = provider(phase='val', batch_size=batch_size, num_workers=num_workers)
     running_mAPs = defaultdict(lambda: 0)
     print('Total Iterations: ', len(dataloader))
-    predicted_boxes = defaultdict(dict)
-    ground_truth_boxes = defaultdict(list)
+    predicted_boxes = {}
+    ground_truth_boxes = {}
+    cls_thresholds = np.linspace(0.15, 0.35, 21)  # detection conf score thresholds
+    for th in cls_thresholds:
+        predicted_boxes[th] = {}
     try:
         for iteration, batch in tqdm(enumerate(dataloader)):
             fnames, images, targets = batch
@@ -39,10 +43,14 @@ if __name__ == "__main__":
             out = net(images)
             detections = out.data
             for i, name in enumerate(fnames):  # len(images) no batch_size (last iter issue)
-                predicted_boxes[name] = get_pred_boxes(detections[i])
+                for th in cls_thresholds:
+                    predicted_boxes[th][name] = get_pred_boxes(detections[i], CLS_THRESH=th)
                 ground_truth_boxes[name] = get_gt_boxes(targets[i])
-        print('Predictions ready, calculating mAP...')
-        get_mAP(ground_truth_boxes, predicted_boxes)
+        del net, dataloader
+        torch.cuda.empty_cache()
+        for th in cls_thresholds:
+            mAP = get_mAP(ground_truth_boxes, predicted_boxes[th])
+            print('CLS_THRESH: %0.2f, mAP: %0.2f' % (th, mAP))
     except:
         traceback.print_exc()
         pdb.set_trace()

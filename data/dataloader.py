@@ -6,7 +6,8 @@ import torch.utils.data as data
 import numpy as np
 
 # from transform import resize, random_flip, random_crop, center_crop
-from utils.augmentations import SSDAugmentation
+# from utils.augmentations import SSDAugmentation
+from utils.aug_imgaug import SSDAugmentation
 from data.config import HOME, cfg, MEANS
 
 CLASSES = ("Lung Opacity",)  # COMMA IS FUCKING IMPORTANT
@@ -21,7 +22,8 @@ class_to_idx = {
 # as Normal and No Lung Opacity / Not Normal have same Target (0), it doesn't make any
 # diff if we include these two as seperate, their target bbox will always be [0,0,0,0] 
 # with target label as -1 :(
-DATA_ROOT = os.path.join(HOME, "data/")
+
+DATA_ROOT = os.path.join(HOME, "data")
 print("DATA_ROOT: ", DATA_ROOT)
 
 
@@ -89,7 +91,7 @@ class SSDDataset(data.Dataset):
         return fname, torch.from_numpy(img), target
 
     def __len__(self):
-        # self.num_samples = 1000  # modify when testing (don't return anything)
+        # self.num_samples = 400  # modify when testing (don't return anything)
         return self.num_samples
 
 

@@ -65,13 +65,12 @@ def iter_log(phase, epoch, iteration, epoch_size, loss_l, loss_c, start):
     )
 
 
-def epoch_log(phase, mAP, epoch, epoch_l_loss, epoch_c_loss, start):
+def epoch_log(phase, epoch, epoch_l_loss, epoch_c_loss, start):
     logger.info("%s epoch: %d finished" % (phase, epoch))
     logger.info(
-        "%s Epoch: %d, mAP: %0.2f, loc_loss: %0.4f, cls_loss: %0.4f",
+        "%s Epoch: %d, loc_loss: %0.4f, cls_loss: %0.4f",
         phase,
         epoch,
-        mAP,
         epoch_l_loss,
         epoch_c_loss,
     )
@@ -79,4 +78,3 @@ def epoch_log(phase, mAP, epoch, epoch_l_loss, epoch_c_loss, start):
     log_value(phase + " cls loss", epoch_c_loss, epoch)
     log_value(phase + " loc loss", epoch_l_loss, epoch)
     log_value(phase + " total loss", epoch_c_loss + epoch_l_loss, epoch)
-    log_value(phase + " mAP", mAP, epoch)

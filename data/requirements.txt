@@ -1,0 +1,9 @@
+kaggle
+pydicom
+tensorflow
+tensorboard-logger
+pandas
+sklearn
+tensorboard
+opencv-python
+imgaug

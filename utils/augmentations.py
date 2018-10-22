@@ -95,8 +95,6 @@ class SubtractMeans(object):
 
     def __call__(self, image, boxes=None, labels=None):
         image = image.astype(np.float32)
-        # pdb.set_trace()
-
         image -= self.mean
         return image.astype(np.float32), boxes, labels
 
@@ -427,8 +425,8 @@ class SSDAugmentation(object):
         if self.phase == "train":
             transforms.extend([
                 PhotometricDistort(),
-                # Expand(self.mean),
-                # RandomSampleCrop(),
+                Expand(self.mean),
+                RandomSampleCrop(),
                 RandomMirror()]
                 )
         transforms.extend([

@@ -1,4 +1,116 @@
+### TO BE READ:
+https://github.com/prigoyal/pytorch_memonger
+https://github.com/prigoyal/pytorch_memonger/blob/master/tutorial/Checkpointing_for_PyTorch_models.ipynb
+https://github.com/pytorch/pytorch/issues/1529#issuecomment-339649776
+https://nihcc.app.box.com/v/ChestXray-NIHCC/folder/37178474737
+
+READ PAPERS ABOUT PNEUMONIA + ML OR CHEXNET???
+
+Tips: 
+before starting a new experiment, create a local copy of ckpt, model and events log file with a little documentation.
+
+
+## 10oct => all augmentations for train
+
 CLS_THRESH: mAP
+model at 17 epoch:
+964it [03:06,  5.17it/s]
+0.15 -> 0.21 = 28.07
+0.22 -> 0.25 = 27.76
+0.26 -> 0.28 = 27.35
+0.29 -> 0.33 = 27.03
+0.34 -> 0.35 = 26.57
+Calculating mAP...
+avg precs:  [0.47, 0.4148, 0.375, 0.3124, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.15, mAP: 28.07
+Calculating mAP...
+avg precs:  [0.47, 0.4148, 0.375, 0.3124, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.16, mAP: 28.07
+Calculating mAP...
+avg precs:  [0.47, 0.4148, 0.375, 0.3124, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.17, mAP: 28.07
+Calculating mAP...
+avg precs:  [0.47, 0.4148, 0.375, 0.3124, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.18, mAP: 28.07
+Calculating mAP...
+avg precs:  [0.47, 0.4148, 0.375, 0.3124, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.19, mAP: 28.07
+Calculating mAP...
+avg precs:  [0.47, 0.4148, 0.375, 0.3124, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.20, mAP: 28.07
+Calculating mAP...
+avg precs:  [0.47, 0.4148, 0.375, 0.3124, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.21, mAP: 28.07
+Calculating mAP...
+avg precs:  [0.47, 0.4148, 0.35, 0.3124, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.22, mAP: 27.76
+Calculating mAP...
+avg precs:  [0.47, 0.4148, 0.35, 0.3124, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.23, mAP: 27.76
+Calculating mAP...
+avg precs:  [0.47, 0.4148, 0.35, 0.3124, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.24, mAP: 27.76
+Calculating mAP...
+avg precs:  [0.47, 0.4148, 0.35, 0.3124, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.25, mAP: 27.76
+Calculating mAP...
+avg precs:  [0.4372, 0.4148, 0.35, 0.3124, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.26, mAP: 27.35
+Calculating mAP...
+avg precs:  [0.4372, 0.4148, 0.35, 0.3124, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.27, mAP: 27.35
+Calculating mAP...
+avg precs:  [0.4372, 0.4148, 0.35, 0.3124, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.28, mAP: 27.35
+Calculating mAP...
+avg precs:  [0.4372, 0.4148, 0.35, 0.2866, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.29, mAP: 27.03
+Calculating mAP...
+avg precs:  [0.4372, 0.4148, 0.35, 0.2866, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.30, mAP: 27.03
+Calculating mAP...
+avg precs:  [0.4372, 0.4148, 0.35, 0.2866, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.31, mAP: 27.03
+Calculating mAP...
+avg precs:  [0.4372, 0.4148, 0.35, 0.2866, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.32, mAP: 27.03
+Calculating mAP...
+avg precs:  [0.4372, 0.4148, 0.35, 0.2866, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.33, mAP: 27.03
+Calculating mAP...
+avg precs:  [0.4372, 0.3781, 0.35, 0.2866, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.34, mAP: 26.57
+Calculating mAP...
+avg precs:  [0.4372, 0.3781, 0.35, 0.2866, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+CLS_THRESH: 0.35, mAP: 26.57
+
+vast9oct2
+# #mAP in threading, model.pth at 15 epoch
+# Note: below at CLS_THRESH = 0.3
+avg precs:  [0.4372, 0.4148, 0.35, 0.2866, 0.2483, 0.1847, 0.1363, 0.1042]
+iou_thrs:   [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+mAP: 0.2702625
 
 vast8oct3 
 ## trained with no expand/crop in aug

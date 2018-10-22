@@ -47,7 +47,10 @@ class SSD(nn.Module):
 
         if phase == 'test':
             self.softmax = nn.Softmax(dim=-1)
-            self.detect = Detect(num_classes, 0, 200, 0.01, 0.45)
+            self.top_k = 10  # 200 by default
+            self.CLS_THRESH = 0.2  # 0.01 by default
+            self.NMS_THRESH = 0.3  # earlier had 0.45
+            self.detect = Detect(num_classes, self.top_k, self.CLS_THRESH, self.NMS_THRESH)
 
     def forward(self, x):
         """Applies network layers and ops on input image(s) x.

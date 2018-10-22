@@ -80,7 +80,7 @@ if __name__ == "__main__":
     num_images = len(testset)
     test_sub = pd.read_csv(sample_submission_path)
     subs = {}
-    thresholds = [0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55]
+    thresholds = [0.2, 0.25, 0.3, 0.35, 0.4]
     print("Using thresholds:", thresholds)
     for i in range(len(thresholds)):
         subs[i] = test_sub.copy()

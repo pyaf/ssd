@@ -90,13 +90,12 @@ class Normalize(object):
 
 
 class SubtractMeans(object):
+    ''' Using pretrained weights, so subtracting'''
     def __init__(self, mean):
         self.mean = np.array(mean, dtype=np.float32)
 
     def __call__(self, image, boxes=None, labels=None):
         image = image.astype(np.float32)
-        pdb.set_trace()
-
         image -= self.mean
         return image.astype(np.float32), boxes, labels
 
@@ -426,10 +425,10 @@ class SSDAugmentation(object):
         seq = iaa.Sequential([
             iaa.OneOf([  # geometric transform
                 iaa.Affine(
-                    scale={"x": (0.98, 1.02), "y": (0.98, 1.04)},
-                    translate_percent={"x": (-0.02, 0.02), "y": (-0.04, 0.04)},
-                    rotate=(-2, 2),
-                    shear=(-1, 1),
+                    scale={"x": (0.96, 1.04), "y": (0.96, 1.04)},
+                    translate_percent={"x": (-0.04, 0.04), "y": (-0.04, 0.04)},
+                    rotate=(-10, 10),
+                    shear=(-10, 10),
                 ),
                 iaa.PiecewiseAffine(scale=(0.001, 0.025)),
             ]),

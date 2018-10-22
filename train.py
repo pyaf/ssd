@@ -18,13 +18,15 @@ from utils import weights_init
 from extras import iter_log, epoch_log, logger, get_pred_boxes, get_gt_boxes
 from metrics import get_mAP
 from shutil import copyfile
+from tensorboard_logger import log_value
+from threading import Thread, active_count
 
 
 class Model(object):
     def __init__(self):
         self.resume = False
         folder = '9oct'
-        self.num_workers = 4
+        self.num_workers = 8
         self.batch_size = {'train': 8, 'val': 8}
         self.lr = 1e-3
         self.momentum = 0.9
@@ -64,8 +66,8 @@ class Model(object):
         self.reset()
 
     def reset(self):
-        self.predicted_boxes = defaultdict(dict)
-        self.ground_truth_boxes = defaultdict(list)
+        self.pred_boxes = defaultdict(dict)
+        self.gt_boxes = defaultdict(list)
 
     def resume_net(self):
         self.resume_path = os.path.join(self.save_folder, "ckpt.pth")
@@ -105,34 +107,49 @@ class Model(object):
         total_images = dataloader.dataset.num_samples
         for iteration, batch in enumerate(dataloader):
             fnames, images, targets = batch
+            print('forward started..............')
             loss_l, loss_c, outputs = self.forward(images, targets)
+            print('forward done..........')
             if phase == "train":
                 self.optimizer.zero_grad()
                 loss = loss_c + loss_l
+                print('loss backward started')
                 loss.backward()
+                print('loss back done.')
                 self.optimizer.step()
             running_l_loss += loss_l.item()
             running_c_loss += loss_c.item()
-            _thread.start_new_thread(self.update_boxes, (fnames, outputs, targets))
+            Thread(target=self.update_boxes, args=(fnames, outputs, targets)).start()
             if iteration % 10 == 0:
+                print('\n\nNumber of active threads: %d \n\n' % active_count())
                 iter_log(phase, epoch, iteration, total_iters, loss_l, loss_c, start)
         epoch_l_loss = running_l_loss / total_images
         epoch_c_loss = running_c_loss / total_images
-        while len(self.ground_truth_boxes) != total_images:  # thread locha
-            self.log('Waiting for threads to get over')
-            # pdb.set_trace()
-            time.sleep(1)
-        mAP = get_mAP(self.ground_truth_boxes, self.predicted_boxes)
-        epoch_log(phase, mAP, epoch, epoch_l_loss, epoch_c_loss, start)
+        epoch_log(phase, epoch, epoch_l_loss, epoch_c_loss, start)
         del dataloader
-        return (epoch_l_loss + epoch_c_loss, mAP)
+        torch.cuda.empty_cache()
+        while len(self.gt_boxes) != total_images:  # thread locha
+            self.log('Waiting for threads to get over')
+            time.sleep(1)
+        if phase == 'train':
+            Thread(target=self.log_mAP, args=(phase, epoch, self.gt_boxes, self.pred_boxes)).start()
+        else:
+            mAP = self.log_mAP(phase, epoch, self.gt_boxes, self.pred_boxes)
+            return (epoch_l_loss + epoch_c_loss, mAP)
+
+    def log_mAP(self, phase, epoch, gt_boxes, pred_boxes):
+        mAP = get_mAP(gt_boxes, pred_boxes)
+        log_value(phase + " mAP", mAP, epoch)
+        return mAP
 
     def update_boxes(self, fnames, outputs, targets):
+        print('updating boxes...')
         outputs[1] = self.softmax(outputs[1])
-        detections = self.detect(* outputs).data
+        detections = self.detect(* outputs)
         for i, name in enumerate(fnames):  # len(images) no batch_size (last iter issue)
-            self.predicted_boxes[name] = get_pred_boxes(detections[i])
-            self.ground_truth_boxes[name] = get_gt_boxes(targets[i])
+            self.pred_boxes[name] = get_pred_boxes(detections[i])
+            self.gt_boxes[name] = get_gt_boxes(targets[i])
+        print('done')
 
     def train(self):
         for epoch in range(self.start_epoch, self.num_epochs):

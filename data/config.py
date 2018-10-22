@@ -1,9 +1,6 @@
-# config.py
-import os.path
+from os.path import dirname, abspath
 
-# gets home dir cross platform
-# HOME = os.path.expanduser("~")
-HOME = os.getcwd()
+HOME = dirname(dirname(abspath(__file__)))
 print('HOME:', HOME)
 
 # for making bounding boxes pretty

@@ -25,6 +25,6 @@ unzip ngrok-stable-linux-amd64.zip
 rm *.zip
 mv ngrok ../
 chmod +x ../ngrok
-
+mkdir submission
 # CUDA_VISIBLE_DEVICES=None tensorboard --logdir=logs/ 
 # ./ngrok http 6006
