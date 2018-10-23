@@ -1,4 +1,6 @@
 kaggle
+matplotlib
+seaborn
 pydicom
 tensorflow
 tensorboard-logger

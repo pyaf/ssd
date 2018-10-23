@@ -5,6 +5,7 @@
 *.tar.gz
 *_list.txt
 CheXNet
+MobilePose*
 /__pycache__/*
 weights/*
 */logs/*

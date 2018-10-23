@@ -16,9 +16,10 @@ rm *.zip
 
 
 kaggle competitions download -c rsna-pneumonia-detection-challenge -f stage_1_train_labels.csv 
-kaggle competitions download -c rsna-pneumonia-detection-challenge -f stage_1_detailed_class_info.csv
-kaggle competitions download -c rsna-pneumonia-detection-challenge -f stage_1_sample_submission.csv
 unzip stage_1_train_labels.csv.zip
+kaggle competitions download -c rsna-pneumonia-detection-challenge -f stage_1_detailed_class_info.csv
+unzip stage_1_detailed_class_info.csv.zip
+kaggle competitions download -c rsna-pneumonia-detection-challenge -f stage_1_sample_submission.csv
 
 wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
 unzip ngrok-stable-linux-amd64.zip
@@ -26,5 +27,7 @@ rm *.zip
 mv ngrok ../
 chmod +x ../ngrok
 mkdir submission
+df -h --total
+
 # CUDA_VISIBLE_DEVICES=None tensorboard --logdir=logs/ 
 # ./ngrok http 6006

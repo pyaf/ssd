@@ -3,7 +3,6 @@ import pdb
 from math import sqrt as sqrt
 from itertools import product as product
 import torch
-from data.config import cfg
 
 
 class PriorBox(object):
@@ -56,20 +55,21 @@ class PriorBox(object):
                 # print(mean[-1])
 
                 # rest of aspect ratios
-                # for ar in self.aspect_ratios[k]:
-                #     mean += [cx, cy, s_k*sqrt(ar), s_k/sqrt(ar)]
-                #     # print(mean[-1])
-                #     mean += [cx, cy, s_k/sqrt(ar), s_k*sqrt(ar)]
-                # print(mean[-1])
+                for ar in self.aspect_ratios[k]:
+                    mean += [cx, cy, s_k*sqrt(ar), s_k/sqrt(ar)]
+                    mean += [cx, cy, s_k/sqrt(ar), s_k*sqrt(ar)]
         # back to torch land
-        output = torch.Tensor(mean).view(-1, 4)
+        output = torch.Tensor(mean).view(1, -1, 4)
         if self.clip:
             output.clamp_(max=1, min=0)
         return output
 
 
 if __name__ == '__main__':
+    import sys
+    sys.path.append('../../')
+    from data.config import cfg
     priors = PriorBox(cfg).forward() * 300
-    # for p in priors:
-    #     print(p)
+    for p in priors:
+        print(p)
     # pdb.set_trace()

@@ -10,6 +10,9 @@ Tips:
 before starting a new experiment, create a local copy of ckpt, model and events log file with a little documentation.
 
 
+## 22oct2
+without photometric augmentations, no transfer learning, with weights_init, with normalization (/255)
+
 ## 10oct => all augmentations for train
 
 CLS_THRESH: mAP

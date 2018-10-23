@@ -33,7 +33,7 @@ class SSD(nn.Module):
         self.num_classes = num_classes
         self.cfg = cfg
         self.priorbox = PriorBox(self.cfg)
-        self.priors = Variable(self.priorbox.forward(), requires_grad=False)
+        self.priors = self.priorbox.forward()
         self.size = size
 
         # SSD network
@@ -116,6 +116,7 @@ class SSD(nn.Module):
                 conf.view(conf.size(0), -1, self.num_classes),
                 self.priors
             ]
+
         return output
 
     def load_weights(self, base_file):
@@ -208,8 +209,13 @@ def build_ssd(phase, size=300, num_classes=2):
 
 
 if __name__ == '__main__':
+    '''If using nn.DataParallel make sure the batch size is greater than num of GPUs.'''
     net = build_ssd("train", cfg["min_dim"], cfg["num_classes"])
-    test_input = torch.rand(1, 1, 300, 300)
+    use_gpu = True
+    device = torch.device("cuda:0" if use_gpu else "cpu")
+    net = torch.nn.DataParallel(net)
+    net = net.to(device)
+    test_input = torch.rand(8, 3, 300, 300).to(device)
+    pdb.set_trace()
     loc, conf, priors = net(test_input)
     print(loc.shape, conf.shape, priors.shape)
-    pdb.set_trace()

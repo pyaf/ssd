@@ -24,10 +24,10 @@ from threading import Thread, active_count
 
 class Model(object):
     def __init__(self):
+        folder = '22oct2'
         self.resume = False
-        folder = '9oct'
-        self.num_workers = 8
-        self.batch_size = {'train': 8, 'val': 8}
+        self.num_workers = 16
+        self.batch_size = {'train': 48, 'val': 16}
         self.lr = 1e-3
         self.momentum = 0.9
         self.weight_decay = 5e-4
@@ -42,7 +42,7 @@ class Model(object):
         self.top_k = 10  # top k bboxes to be detected
         self.phases = ['train', 'val']
         self.cuda = torch.cuda.is_available()
-        self.device = torch.device("cuda" if self.cuda else "cpu")
+        self.device = torch.device("cuda:0" if self.cuda else "cpu")
         weights_path = os.path.join(os.getcwd(), "weights")
         self.save_folder = os.path.join(weights_path, folder)
         self.basenet_path = os.path.join(weights_path, "vgg16_reducedfc.pth")
@@ -59,8 +59,9 @@ class Model(object):
             self.resume_net()
         else:
             self.initialize_net()
+        self.net = nn.DataParallel(self.net)
         self.net = self.net.to(self.device)
-        if self.cuda: 
+        if self.cuda:
             cudnn.benchmark = True
         configure(os.path.join(self.save_folder, "logs"), flush_secs=5)
         self.reset()
@@ -80,10 +81,11 @@ class Model(object):
         self.start_epoch = state["epoch"] + 1
 
     def initialize_net(self):
-        vgg_weights = torch.load(self.basenet_path)
-        self.log("Loading base network...")
-        self.net.vgg.load_state_dict(vgg_weights)
+        # vgg_weights = torch.load(self.basenet_path)
+        # self.log("Loading base network...")
+        # self.net.vgg.load_state_dict(vgg_weights)
         self.log("Initializing weights...")
+        self.net.vgg.apply(weights_init)
         self.net.extras.apply(weights_init)
         self.net.loc.apply(weights_init)
         self.net.conf.apply(weights_init)
@@ -92,6 +94,7 @@ class Model(object):
         images = images.to(self.device)
         targets = [ann.to(self.device) for ann in targets]
         outputs = self.net(images)
+        outputs[-1] = outputs[-1][0]  # Issue #1
         loss_l, loss_c = self.criterion(outputs, targets)
         return loss_l, loss_c, outputs
 
@@ -105,23 +108,27 @@ class Model(object):
         running_l_loss, running_c_loss = 0, 0
         total_iters = len(dataloader)
         total_images = dataloader.dataset.num_samples
+        t = time.time()
         for iteration, batch in enumerate(dataloader):
+            # print('time taken:', (time.time() - t), ' secs')
+            # t = time.time()
             fnames, images, targets = batch
-            print('forward started..............')
+            # print('forward started..............')
             loss_l, loss_c, outputs = self.forward(images, targets)
-            print('forward done..........')
+            # print('forward done..........')
             if phase == "train":
                 self.optimizer.zero_grad()
                 loss = loss_c + loss_l
-                print('loss backward started')
+                # print('loss backward started')
                 loss.backward()
-                print('loss back done.')
+                # print('loss back done.')
                 self.optimizer.step()
             running_l_loss += loss_l.item()
             running_c_loss += loss_c.item()
+            # self.update_boxes(fnames, outputs, targets)
             Thread(target=self.update_boxes, args=(fnames, outputs, targets)).start()
             if iteration % 10 == 0:
-                print('\n\nNumber of active threads: %d \n\n' % active_count())
+                # print('\n\nNumber of active threads: %d \n\n' % active_count())
                 iter_log(phase, epoch, iteration, total_iters, loss_l, loss_c, start)
         epoch_l_loss = running_l_loss / total_images
         epoch_c_loss = running_c_loss / total_images
@@ -131,9 +138,9 @@ class Model(object):
         while len(self.gt_boxes) != total_images:  # thread locha
             self.log('Waiting for threads to get over')
             time.sleep(1)
-        if phase == 'train':
+        if phase == 'train' and epoch and epoch % 3 == 0:
             Thread(target=self.log_mAP, args=(phase, epoch, self.gt_boxes, self.pred_boxes)).start()
-        else:
+        elif phase == 'val':
             mAP = self.log_mAP(phase, epoch, self.gt_boxes, self.pred_boxes)
             return (epoch_l_loss + epoch_c_loss, mAP)
 
@@ -143,13 +150,14 @@ class Model(object):
         return mAP
 
     def update_boxes(self, fnames, outputs, targets):
-        print('updating boxes...')
+        # print('updating boxes...')
+        # pdb.set_trace()
         outputs[1] = self.softmax(outputs[1])
         detections = self.detect(* outputs)
         for i, name in enumerate(fnames):  # len(images) no batch_size (last iter issue)
             self.pred_boxes[name] = get_pred_boxes(detections[i])
             self.gt_boxes[name] = get_gt_boxes(targets[i])
-        print('done')
+        # print('done')
 
     def train(self):
         for epoch in range(self.start_epoch, self.num_epochs):
@@ -178,6 +186,15 @@ if __name__ == '__main__':
 
 # batch_size 2 = 1.2MB, 8 = 2.2, 16 = 4.0MB
 """
+self.batch_size = {'train': 48, 'val': 16} for 2x 1080
+6 GB for each phase
+7 mins, 1 min
 
+
+
+Issues:
+
+Issue #1: SSD returns priors in shape of (1, -1, 4), nn.DataParallel combines the outputs
+from multiple GPUs, we need priors in shape of (-1, 4), so it needs to be reshaped.
 
 """

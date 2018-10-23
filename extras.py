@@ -53,15 +53,17 @@ def get_gt_boxes(targets):
 
 
 def iter_log(phase, epoch, iteration, epoch_size, loss_l, loss_c, start):
+    diff = (time.time() - start)
     logger.info(
-        "%s epoch: %d (%d/%d) loc_loss: %.4f || cls_loss: %0.4f || %0.2f mins",
+        "%s epoch: %d (%d/%d) loc_loss: %.4f || cls_loss: %0.4f || %02d:%02d",
         phase,
         epoch,
         iteration,
         epoch_size,
         loss_l.item(),
         loss_c.item(),
-        (time.time() - start) / 60,
+        diff // 60,
+        diff % 60
     )
 
 

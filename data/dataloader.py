@@ -6,8 +6,8 @@ import torch.utils.data as data
 import numpy as np
 
 # from transform import resize, random_flip, random_crop, center_crop
-# from utils.augmentations import SSDAugmentation
-from utils.aug_imgaug import SSDAugmentation
+from utils.augmentations import SSDAugmentation
+# from utils.aug_imgaug import SSDAugmentation
 from data.config import HOME, cfg, MEANS
 
 CLASSES = ("Lung Opacity",)  # COMMA IS FUCKING IMPORTANT
@@ -111,9 +111,13 @@ def provider(phase="train", batch_size=8, num_workers=4):
 
 if __name__ == "__main__":
     os.environ['CUDA_VISIBLE_DEVICES'] = "None"
-    dataloader = provider(phase='val', num_workers=0)
+    import time
+    dataloader = provider(phase='val', num_workers=4)
     total_iters = dataloader.__len__()
+    t = time.time()
     for iter_, batch in enumerate(dataloader):
+        print('time taken:', (time.time() - t), ' secs')
+        t = time.time()
         fnames, images, boxes = batch
         print("%d/%d" % (iter_, total_iters), images.size(), len(boxes[0]))
         print(boxes)
