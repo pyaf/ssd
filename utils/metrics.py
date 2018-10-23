@@ -33,6 +33,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from .extras import logger
 
 sns.set_style('white')
 sns.set_context('poster')
@@ -304,7 +305,7 @@ def plot_pr_curve(
     return ax
 
 def get_mAP(gt_boxes, pred_boxes, save_plot=False):
-    print('Calculating mAP...')
+    logger.info('Calculating mAP...')
     start_time = time.time()
     ax = None
     avg_precs = []
@@ -322,10 +323,12 @@ def get_mAP(gt_boxes, pred_boxes, save_plot=False):
     # prettify for printing:
     avg_precs = [float('{:.4f}'.format(ap)) for ap in avg_precs]
     iou_thrs = [float('{:.4f}'.format(thr)) for thr in iou_thrs]
-    mAP = 100 * np.mean(avg_precs)
+    mAP = np.mean(avg_precs)
     # print('map: {:.2f}'.format(mAP))
-    print('avg precs: ', avg_precs)
-    print('iou_thrs:  ', iou_thrs)
+    logger.info('avg precs: [' + ', '.join(map(str, avg_precs)) + ']')
+    logger.info('iou_thrs:  ['+ ', '.join(map(str, iou_thrs)) + ']')
+    diff = time.time() - start_time
+    logger.info('calculating mAP takes %02d:%02d' % (diff // 60, diff % 60))
     if save_plot:
         plt.legend(loc='upper right', title='IOU Thr', frameon=True)
         for xval in np.linspace(0.0, 1.0, 11):

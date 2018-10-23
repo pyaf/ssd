@@ -10,7 +10,7 @@ import torch.backends.cudnn as cudnn
 import time
 import pydicom
 from ssd import build_ssd
-from data.dataloader import CLASSES
+from dataloader import CLASSES
 import torch.utils.data as data
 
 
@@ -32,9 +32,9 @@ class TestDataset(data.Dataset):
         img = dcm_data.pixel_array
         img = cv2.resize(img, (300, 300)).astype(np.float32)
         img = np.expand_dims(img, -1).repeat(3, axis=-1)
-        img -= self.mean
+        # img -= self.mean
         img = img.transpose(-1, 0, 1)
-#         img /= 255.
+        img /= 255.
         return img
 
     def __len__(self):
@@ -55,7 +55,7 @@ def get_prediction_str(detections, threshold):
 if __name__ == "__main__":
     # load model
     use_cuda = True
-    trained_model_path = 'weights/8oct3/model30.pth'
+    trained_model_path = 'weights/23oct/model.pth'
     device = torch.device("cuda" if use_cuda else "cpu")
     if use_cuda:
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
@@ -63,6 +63,7 @@ if __name__ == "__main__":
         torch.set_default_tensor_type('torch.FloatTensor')
     num_classes = len(CLASSES) + 1  # +1 background
     net = build_ssd('test', 300, num_classes)  # initialize SSD
+    net = torch.nn.DataParallel(net)
     state = torch.load(trained_model_path, map_location=lambda storage, loc: storage)
     net.load_state_dict(state["state_dict"])
     net.eval()
@@ -80,13 +81,14 @@ if __name__ == "__main__":
     num_images = len(testset)
     test_sub = pd.read_csv(sample_submission_path)
     subs = {}
-    thresholds = [0.2, 0.25, 0.3, 0.35, 0.4]
+    thresholds = [0.2, 0.23, 0.27, 0.30, 0.33] # class thresholds for predicted boxes
     print("Using thresholds:", thresholds)
     for i in range(len(thresholds)):
         subs[i] = test_sub.copy()
 
     # predictions
     for i in tqdm(range(num_images)):
+        # pdb.set_trace()
         img = testset.pull_image(i)
         x = torch.Tensor(img).view(1, 3, 300, 300)
         x = x.to(device)
@@ -98,11 +100,6 @@ if __name__ == "__main__":
     for idx, th in enumerate(thresholds):
         subs[idx].to_csv(sub_path + 'submission-%0.2f.csv' % th, index=False)
 
-    '''
-    total test images: 2463
-    On CPU takes around 1 Hour 40 mins.
-    On GPU takes around 1 Hour, 843 MB GPU memory, batch_size=1
-    '''
 
 '''
 upto vast8oct2 models were trained with img /= 255 normalization, afterwards by img -= mean

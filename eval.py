@@ -6,9 +6,8 @@ import traceback
 import torch
 from tqdm import tqdm
 from ssd import build_ssd
-from data.dataloader import CLASSES, provider
-from metrics import get_mAP
-from extras import get_gt_boxes, get_pred_boxes
+from dataloader import CLASSES, provider
+from utils import get_gt_boxes, get_pred_boxes, get_mAP
 from collections import defaultdict
 
 if __name__ == "__main__":

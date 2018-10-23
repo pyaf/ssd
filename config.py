@@ -1,6 +1,8 @@
+import torch
 from os.path import dirname, abspath
+from functions.prior_box import PriorBox
 
-HOME = dirname(dirname(abspath(__file__)))
+HOME = dirname(abspath(__file__))
 print('HOME:', HOME)
 
 # for making bounding boxes pretty
@@ -33,10 +35,12 @@ cfg = {
         '300': [256, 'S', 512, 128, 'S', 256, 128, 256, 128, 256],
     },
     'mbox': {
-        '300': [1, 1, 1, 1, 1],  # number of boxes per feature map location
+        '300': [5, 5, 5, 3, 3],  # number of boxes per feature map location
     }
 }
-
+cuda = torch.cuda.is_available()
+device = torch.device("cuda:0" if cuda else "cpu")
+prior_data = PriorBox(cfg).forward().to(device)
 
 
 ''' cfg used before 23 oct ''' 
@@ -92,7 +96,7 @@ cfg = {
 #         '300': [256, 'S', 512, 128, 'S', 256, 128, 256, 128, 256],
 #     },
 #     'mbox': {
-#         '300': [4, 6, 6, 6, 4, 4],  # number of boxes per feature map location
+#         '300': [4, 6, 6, 6, 4, 4],  # number of boxes per feature map location, 2 for each aspect ratio + 2
 #     }
 # }
 

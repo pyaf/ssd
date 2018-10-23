@@ -6,7 +6,7 @@ import random
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from data.config import HOME
+from config import HOME
 
 
 def save_npy(fnames, phase):

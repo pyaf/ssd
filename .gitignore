@@ -1,4 +1,5 @@
 *.npy
+.ipynb_checkpoints
 *.pdf
 *.png
 *.csv

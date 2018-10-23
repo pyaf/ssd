@@ -4,8 +4,9 @@ import traceback
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from data.config import cfg
-from ..box_utils import match, log_sum_exp
+from config import cfg, prior_data
+from .prior_box import PriorBox
+from .box_utils import match, log_sum_exp
 
 
 class MultiBoxLoss(nn.Module):
@@ -54,6 +55,7 @@ class MultiBoxLoss(nn.Module):
         self.encode_target = encode_target  # not used
         self.use_gpu = use_gpu
         self.variance = cfg["variance"]
+        
 
     def forward(self, predictions, targets):
         """Multibox Loss
@@ -69,9 +71,9 @@ class MultiBoxLoss(nn.Module):
         """
         try:
             # pdb.set_trace()
-            loc_data, conf_data, priors = predictions
+            loc_data, conf_data = predictions
             batch = loc_data.size(0)  # batch size
-            priors = priors[: loc_data.size(1), :]  # useless step ?
+            priors = prior_data[: loc_data.size(1), :]  # useless step ?
             num_priors = priors.size(0)  # 8732
 
             # match priors (default boxes) and ground truth boxes

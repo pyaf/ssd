@@ -2,6 +2,8 @@ from .augmentations import SSDAugmentation
 import torch.nn as nn
 import torch.nn.init as init
 from .evaluate import *
+from .metrics import *
+from .extras import *
 
 def adjust_learning_rate(lr, optimizer, gamma, step):
     """Sets the learning rate to the initial LR decayed by 10 at every

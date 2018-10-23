@@ -1,8 +1,8 @@
 import pdb
 import torch
 from torch.autograd import Function
-from ..box_utils import decode, nms
-from data.config import cfg
+from config import cfg, prior_data
+from .box_utils import decode, nms
 
 
 class Detect(Function):
@@ -21,8 +21,9 @@ class Detect(Function):
             raise ValueError('nms_threshold must be non negative.')
         self.conf_thresh = conf_thresh
         self.variance = cfg['variance']
+        
 
-    def forward(self, loc_data, conf_data, prior_data):
+    def forward(self, loc_data, conf_data):
         # pdb.set_trace()
         """
         Args:

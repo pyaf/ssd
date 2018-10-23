@@ -9,25 +9,21 @@ import torch.backends.cudnn as cudnn
 from collections import defaultdict
 from ssd import build_ssd
 import torch.nn as nn
-from layers import Detect
-from layers.modules import MultiBoxLoss
-from tensorboard_logger import configure
-from data.config import cfg
-from data.dataloader import provider
-from utils import weights_init
-from extras import iter_log, epoch_log, logger, get_pred_boxes, get_gt_boxes
-from metrics import get_mAP
+from tensorboard_logger import configure, log_value
+from functions import MultiBoxLoss, Detect
+from utils import weights_init, iter_log, epoch_log, logger, get_pred_boxes, get_gt_boxes, print_time, get_mAP
+from config import cfg, HOME
+from dataloader import provider
 from shutil import copyfile
-from tensorboard_logger import log_value
 from threading import Thread, active_count
 
 
 class Model(object):
     def __init__(self):
-        folder = '22oct2'
+        folder = 'weights/23oct2'
         self.resume = False
-        self.num_workers = 16
-        self.batch_size = {'train': 48, 'val': 16}
+        self.num_workers = 8
+        self.batch_size = {'train': 32, 'val': 8}
         self.lr = 1e-3
         self.momentum = 0.9
         self.weight_decay = 5e-4
@@ -43,9 +39,8 @@ class Model(object):
         self.phases = ['train', 'val']
         self.cuda = torch.cuda.is_available()
         self.device = torch.device("cuda:0" if self.cuda else "cpu")
-        weights_path = os.path.join(os.getcwd(), "weights")
-        self.save_folder = os.path.join(weights_path, folder)
-        self.basenet_path = os.path.join(weights_path, "vgg16_reducedfc.pth")
+        self.save_folder = os.path.join(HOME, folder)
+        self.basenet_path = os.path.join(HOME, "weights/vgg16_reducedfc.pth")
         self.model_path = os.path.join(self.save_folder, "model.pth")
         self.tensor_type = "torch.cuda.FloatTensor" if self.cuda else "torch.FloatTensor"
         torch.set_default_tensor_type(self.tensor_type)
@@ -85,7 +80,7 @@ class Model(object):
         # self.log("Loading base network...")
         # self.net.vgg.load_state_dict(vgg_weights)
         self.log("Initializing weights...")
-        self.net.vgg.apply(weights_init)
+        self.net.vgg.apply(weights_init)  # incase training from scratch
         self.net.extras.apply(weights_init)
         self.net.loc.apply(weights_init)
         self.net.conf.apply(weights_init)
@@ -94,7 +89,6 @@ class Model(object):
         images = images.to(self.device)
         targets = [ann.to(self.device) for ann in targets]
         outputs = self.net(images)
-        outputs[-1] = outputs[-1][0]  # Issue #1
         loss_l, loss_c = self.criterion(outputs, targets)
         return loss_l, loss_c, outputs
 
@@ -108,26 +102,24 @@ class Model(object):
         running_l_loss, running_c_loss = 0, 0
         total_iters = len(dataloader)
         total_images = dataloader.dataset.num_samples
-        t = time.time()
+        calc_train_mAP = epoch and epoch % 3 == 0
+        # t = time.time()
         for iteration, batch in enumerate(dataloader):
             # print('time taken:', (time.time() - t), ' secs')
             # t = time.time()
             fnames, images, targets = batch
-            # print('forward started..............')
             loss_l, loss_c, outputs = self.forward(images, targets)
-            # print('forward done..........')
             if phase == "train":
                 self.optimizer.zero_grad()
                 loss = loss_c + loss_l
-                # print('loss backward started')
                 loss.backward()
-                # print('loss back done.')
                 self.optimizer.step()
             running_l_loss += loss_l.item()
             running_c_loss += loss_c.item()
             # self.update_boxes(fnames, outputs, targets)
-            Thread(target=self.update_boxes, args=(fnames, outputs, targets)).start()
-            if iteration % 10 == 0:
+            if phase == 'val' or calc_train_mAP:
+                Thread(target=self.update_boxes, args=(fnames, outputs, targets)).start()
+            if iteration % 100 == 0:
                 # print('\n\nNumber of active threads: %d \n\n' % active_count())
                 iter_log(phase, epoch, iteration, total_iters, loss_l, loss_c, start)
         epoch_l_loss = running_l_loss / total_images
@@ -135,17 +127,19 @@ class Model(object):
         epoch_log(phase, epoch, epoch_l_loss, epoch_c_loss, start)
         del dataloader
         torch.cuda.empty_cache()
-        while len(self.gt_boxes) != total_images:  # thread locha
-            self.log('Waiting for threads to get over')
-            time.sleep(1)
-        if phase == 'train' and epoch and epoch % 3 == 0:
+        if phase == 'val' or calc_train_mAP:
+            while len(self.gt_boxes) != total_images:  # thread locha
+                self.log('Waiting for threads to get over')
+                time.sleep(1)
+        if phase == 'train' and calc_train_mAP:
             Thread(target=self.log_mAP, args=(phase, epoch, self.gt_boxes, self.pred_boxes)).start()
-        elif phase == 'val':
+        elif phase == 'val':  # elif is imp
             mAP = self.log_mAP(phase, epoch, self.gt_boxes, self.pred_boxes)
             return (epoch_l_loss + epoch_c_loss, mAP)
 
     def log_mAP(self, phase, epoch, gt_boxes, pred_boxes):
         mAP = get_mAP(gt_boxes, pred_boxes)
+        self.log('%s epoch: %d  || mAP: %0.2f \n' % (phase, epoch, mAP))
         log_value(phase + " mAP", mAP, epoch)
         return mAP
 
@@ -160,8 +154,9 @@ class Model(object):
         # print('done')
 
     def train(self):
+        t0 = time.time()
         for epoch in range(self.start_epoch, self.num_epochs):
-            self.log("Starting epoch: %d", epoch)
+            t_epoch_start = time.time()
             self.iterate(epoch, 'train')
             val_loss, mAP = self.iterate(epoch, 'val')
             state = {
@@ -177,24 +172,24 @@ class Model(object):
             torch.save(state, os.path.join(self.save_folder, "ckpt.pth"))
             if epoch and epoch % 10 == 0:
                 copyfile(self.model_path, os.path.join(self.save_folder, "model%d.pth" % epoch))
+            print_time(t_epoch_start, 'Time taken by the epoch')
+            print_time(t0, 'Total time taken so far')
             self.log("=" * 50 + "\n")
+
+
 
 
 if __name__ == '__main__':
     model = Model()
     model.train()
 
-# batch_size 2 = 1.2MB, 8 = 2.2, 16 = 4.0MB
+
+
+
 """
+for cfg before 23oct
 self.batch_size = {'train': 48, 'val': 16} for 2x 1080
 6 GB for each phase
 7 mins, 1 min
-
-
-
-Issues:
-
-Issue #1: SSD returns priors in shape of (1, -1, 4), nn.DataParallel combines the outputs
-from multiple GPUs, we need priors in shape of (-1, 4), so it needs to be reshaped.
 
 """

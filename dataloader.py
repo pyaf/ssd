@@ -8,7 +8,7 @@ import numpy as np
 # from transform import resize, random_flip, random_crop, center_crop
 from utils.augmentations import SSDAugmentation
 # from utils.aug_imgaug import SSDAugmentation
-from data.config import HOME, cfg, MEANS
+from config import HOME, cfg, MEANS
 
 CLASSES = ("Lung Opacity",)  # COMMA IS FUCKING IMPORTANT
 
@@ -91,7 +91,7 @@ class SSDDataset(data.Dataset):
         return fname, torch.from_numpy(img), target
 
     def __len__(self):
-        # self.num_samples = 400  # modify when testing (don't return anything)
+        # self.num_samples = 200  # modify when testing (don't return anything)
         return self.num_samples
 
 
