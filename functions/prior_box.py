@@ -36,8 +36,6 @@ class PriorBox(object):
                 # unit center x,y
                 cx = (j + 0.5) / f_k
                 cy = (i + 0.5) / f_k
-                # print(f, cx, cy)
-                # continue
 
                 # aspect_ratio: 1
                 # rel size: min_size
@@ -49,7 +47,6 @@ class PriorBox(object):
                 # rel size: sqrt(s_k * s_(k+1))
                 # s_k_prime = sqrt(s_k * (self.max_sizes[k] / self.image_size))
                 # mean += [cx, cy, s_k_prime, s_k_prime]
-                # print(mean[-1])
 
                 # rest of aspect ratios
                 for ar in self.aspect_ratios[k]:
