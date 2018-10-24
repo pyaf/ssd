@@ -60,11 +60,10 @@ class MultiBoxLoss(nn.Module):
     def forward(self, predictions, targets):
         """Multibox Loss
         Args:
-            predictions (tuple): A tuple containing loc preds, conf preds,
-            and prior boxes from SSD net.
-                conf shape: torch.size(batch_size, num_priors, num_classes)
-                loc shape: torch.size(batch_size, num_priors, 4)
-                priors shape: torch.size(num_priors, 4)
+            predictions (tuple): A tuple containing loc preds and conf preds
+                from SSD net.
+            conf shape: torch.size(batch_size, num_priors, num_classes)
+            loc shape: torch.size(batch_size, num_priors, 4)
 
             targets (tensor): Ground truth boxes and labels for a batch,
                 shape: [batch_size, num_objs, 5] (last idx is the label).

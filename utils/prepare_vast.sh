@@ -43,3 +43,5 @@ echo 'export KAGGLE_USERNAME="rishabhiitbhu"' >> ~/.bashrc
 #kaggle competitions submit rsna-pneumonia-detection-challenge -f submission-0.23.csv -m "23oct model"
 
 # sftp://root@52.204.230.7:16709
+
+# jupyter notebook  --ip=127.0.0.1 --port 8080 --allow-root

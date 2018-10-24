@@ -76,11 +76,11 @@ class Model(object):
         self.start_epoch = state["epoch"] + 1
 
     def initialize_net(self):
-        # vgg_weights = torch.load(self.basenet_path)
-        # self.log("Loading base network...")
-        # self.net.vgg.load_state_dict(vgg_weights)
+        vgg_weights = torch.load(self.basenet_path)
+        self.log("Loading base network...")
+        self.net.vgg.load_state_dict(vgg_weights)
         self.log("Initializing weights...")
-        self.net.vgg.apply(weights_init)  # incase training from scratch
+        # self.net.vgg.apply(weights_init)  # incase training from scratch, tried it a few times, doesn't help much
         self.net.extras.apply(weights_init)
         self.net.loc.apply(weights_init)
         self.net.conf.apply(weights_init)

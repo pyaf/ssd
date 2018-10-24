@@ -91,7 +91,7 @@ class SSDDataset(data.Dataset):
         return fname, torch.from_numpy(img), target
 
     def __len__(self):
-        # self.num_samples = 200  # modify when testing (don't return anything)
+        # self.num_samples = 500  # modify when testing (don't return anything)
         return self.num_samples
 
 

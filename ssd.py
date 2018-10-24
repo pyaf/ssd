@@ -47,7 +47,7 @@ class SSD(nn.Module):
         if phase == 'test':
             self.softmax = nn.Softmax(dim=-1)
             self.top_k = 10  # 200 by default
-            self.CLS_THRESH = 0.2  # 0.01 by default
+            self.CLS_THRESH = 0.2  # 0.01 by default, set to reduce computation
             self.NMS_THRESH = 0.3  # earlier had 0.45
             self.detect = Detect(num_classes, self.top_k, self.CLS_THRESH, self.NMS_THRESH)
 
@@ -78,8 +78,9 @@ class SSD(nn.Module):
         for k in range(23):
             x = self.vgg[k](x)
 
-        # s = self.L2Norm(x)
-        # sources.append(s)
+        s = self.L2Norm(x)
+        # pdb.set_trace()
+        sources.append(s)
 
         # apply vgg up to fc7 (conv7)
         for k in range(23, len(self.vgg)):
@@ -172,14 +173,15 @@ def add_extras(cfg, in_channels, batch_norm=False):
 def multibox(vgg, extra_layers, mbox, num_classes):
     loc_layers = []
     conf_layers = []
-    # vgg_source = [21, -2]  # conv4_3 and conv7 of vgg
-    vgg_source = [-2]  # conv4_3 and conv7 of vgg
+    vgg_source = [21, -2]  # conv4_3 and conv7 of vgg
+    # vgg_source = [-2]  # only conv7 of vgg
     for k, v in enumerate(vgg_source):
         loc_layers += [nn.Conv2d(vgg[v].out_channels,
-                                 mbox[k] * 4, kernel_size=3, padding=1)]
+                                 mbox[k] * 4, kernel_size=3, padding=1)]  # 4 is for xyxy/xywh
         conf_layers += [nn.Conv2d(vgg[v].out_channels,
                                   mbox[k] * num_classes, kernel_size=3, padding=1)]
-    for k, v in enumerate(extra_layers[1::2], len(vgg_source)):  # k starts with 2, v = [512, 256, 256, 256]
+    for k, v in enumerate(extra_layers[1::2], len(vgg_source)):  # k starts as len(vgg_source)
+        # v.out_channels = [512, 256, 256]
         loc_layers += [nn.Conv2d(v.out_channels, mbox[k]
                                  * 4, kernel_size=3, padding=1)]
         conf_layers += [nn.Conv2d(v.out_channels, mbox[k]
@@ -207,12 +209,15 @@ def build_ssd(phase, size=300, num_classes=2):
 
 if __name__ == '__main__':
     '''If using nn.DataParallel make sure the batch size is greater than num of GPUs.'''
+    from config import prior_data
     net = build_ssd("train", cfg["min_dim"], cfg["num_classes"])
+    
     use_gpu = True
     device = torch.device("cuda:0" if use_gpu else "cpu")
     net = torch.nn.DataParallel(net)
     net = net.to(device)
     test_input = torch.rand(8, 3, 300, 300).to(device)
+    loc, conf = net(test_input)
+    print('output shape', loc.shape, conf.shape)
+    print('Prior_data shape:', prior_data.shape)
     pdb.set_trace()
-    loc, conf, priors = net(test_input)
-    print(loc.shape, conf.shape, priors.shape)

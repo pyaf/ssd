@@ -31,7 +31,7 @@ class PriorBox(object):
         for k, f in enumerate(self.feature_maps):
             for i, j in product(range(f), repeat=2):  # all possible coords in fxf feature map
                 # f * f priors are there for each fm
-                # 389, 100, 25, 3, 1 => prior boxes per fm
+                #1444, 361, 100, 25, 3 => prior boxes per cell in fms
                 f_k = self.image_size / self.steps[k]
                 # unit center x,y
                 cx = (j + 0.5) / f_k
@@ -43,10 +43,8 @@ class PriorBox(object):
                 # rel size: min_size
                 s_k = self.min_sizes[k] / self.image_size
                 mean += [cx, cy, s_k, s_k]
-                # print([x*300 for x in mean[-4:]])
-                # if s_k * 300 < 50:
-                #     pdb.set_trace()
 
+                # I Don't think we need another prior with aspect ratio 1 (do I?)
                 # aspect_ratio: 1
                 # rel size: sqrt(s_k * s_(k+1))
                 # s_k_prime = sqrt(s_k * (self.max_sizes[k] / self.image_size))
@@ -55,8 +53,7 @@ class PriorBox(object):
 
                 # rest of aspect ratios
                 for ar in self.aspect_ratios[k]:
-                    mean += [cx, cy, s_k*sqrt(ar), s_k/sqrt(ar)]
-                    mean += [cx, cy, s_k/sqrt(ar), s_k*sqrt(ar)]
+                    mean += [cx, cy, s_k*sqrt(ar), s_k/sqrt(ar)]  # transforming the box to the aspect ratio: ar, keeping the area constant (s_k ^ 2)
         # back to torch land
         output = torch.Tensor(mean).view(-1, 4)
         if self.clip:

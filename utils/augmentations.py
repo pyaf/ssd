@@ -432,8 +432,8 @@ class SSDAugmentation(object):
         transforms.extend([
             ToPercentCoords(),
             Resize(self.size),
-            # SubtractMeans(self.mean)
-            Normalize()
+            SubtractMeans(self.mean)
+            # Normalize()
             ])
         # transforms = []
         self.augment = Compose(transforms)

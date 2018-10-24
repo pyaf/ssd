@@ -55,7 +55,8 @@ def get_prediction_str(detections, threshold):
 if __name__ == "__main__":
     # load model
     use_cuda = True
-    trained_model_path = 'weights/23oct/model.pth'
+    trained_model_path = 'weights/23oct2/model.pth'
+    print("Using trained model at %s" % trained_model_path)
     device = torch.device("cuda" if use_cuda else "cpu")
     if use_cuda:
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
