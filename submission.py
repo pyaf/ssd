@@ -32,9 +32,9 @@ class TestDataset(data.Dataset):
         img = dcm_data.pixel_array
         img = cv2.resize(img, (300, 300)).astype(np.float32)
         img = np.expand_dims(img, -1).repeat(3, axis=-1)
-        # img -= self.mean
+        img -= self.mean
         img = img.transpose(-1, 0, 1)
-        img /= 255.
+        # img /= 255.
         return img
 
     def __len__(self):
@@ -46,16 +46,14 @@ def get_prediction_str(detections, threshold):
     for idx in np.where(detections[0, 1, :, 0] >= threshold)[0]:
         XMin, YMin, XMax, YMax = [x * 1024 for x in detections[0, 1, idx, 1:]]
         score = detections[0, 1, idx, 0]
-        w = XMax - XMin + 1
-        h = YMax - YMin + 1
-        pred_str.extend([score, XMin, YMin, w, h])
+        pred_str.extend([score, XMin, YMin, XMax - XMin, YMax - YMin])
     return " ".join(map(lambda x: str(x.item()), pred_str))
 
 
 if __name__ == "__main__":
     # load model
     use_cuda = True
-    trained_model_path = 'weights/23oct2/model.pth'
+    trained_model_path = 'weights/24oct/model.pth'
     print("Using trained model at %s" % trained_model_path)
     device = torch.device("cuda" if use_cuda else "cpu")
     if use_cuda:

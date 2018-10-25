@@ -17,7 +17,8 @@ def save_npy(fnames, phase):
         box, label = [], []
         for idx in indices:
             line = df.iloc[idx]
-            x, y = line["x"], line["y"]
+            # x-min y-min width height format acc to competition data page
+            x, y = line["x"], line["y"]  
             box.append([x, y, (x + line["width"]), (y + line["height"])])
             label.append(class_to_idx[class_df.iloc[idx]["class"]])
         if line["Target"]:

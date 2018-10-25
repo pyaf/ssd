@@ -38,7 +38,7 @@ echo 'export KAGGLE_USERNAME="rishabhiitbhu"' >> ~/.bashrc
 # CUDA_VISIBLE_DEVICES=None tensorboard --logdir=logs/ 
 # ./ngrok http 6006
 
-# if locale error in tensorboard, run this: `export LC_ALL=C`
+# if locale error in tensorboard, run this: `echo 'export LC_ALL="C"' >> ~/.bashrc`
 
 #kaggle competitions submit rsna-pneumonia-detection-challenge -f submission-0.23.csv -m "23oct model"
 

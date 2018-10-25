@@ -424,7 +424,7 @@ class SSDAugmentation(object):
         transforms = [ConvertFromInts()]
         if self.phase == "train":
             transforms.extend([
-                # PhotometricDistort(),
+                PhotometricDistort(),
                 Expand(self.mean),
                 RandomSampleCrop(),
                 RandomMirror()]

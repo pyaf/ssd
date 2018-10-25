@@ -20,7 +20,7 @@ from threading import Thread, active_count
 
 class Model(object):
     def __init__(self):
-        folder = 'weights/23oct2'
+        folder = 'weights/24oct'
         self.resume = False
         self.num_workers = 8
         self.batch_size = {'train': 32, 'val': 8}
@@ -138,7 +138,7 @@ class Model(object):
             return (epoch_l_loss + epoch_c_loss, mAP)
 
     def log_mAP(self, phase, epoch, gt_boxes, pred_boxes):
-        mAP = get_mAP(gt_boxes, pred_boxes)
+        mAP = get_mAP(phase, epoch, gt_boxes, pred_boxes)
         self.log('%s epoch: %d  || mAP: %0.2f \n' % (phase, epoch, mAP))
         log_value(phase + " mAP", mAP, epoch)
         return mAP
