@@ -23,7 +23,8 @@ class_to_idx = {
 # diff if we include these two as seperate, their target bbox will always be [0,0,0,0] 
 # with target label as -1 :(
 
-DATA_ROOT = os.path.join(HOME, "data")
+DATA_ROOT = os.path.join(HOME, "data_stage2")
+
 print("DATA_ROOT: ", DATA_ROOT)
 
 
@@ -58,7 +59,7 @@ class SSDDataset(data.Dataset):
           transform: ([transforms]) image transforms.
           input_size: (int) model input size.
         """
-        self.root = os.path.join(DATA_ROOT, "stage_1_train_images/")
+        self.root = os.path.join(DATA_ROOT, "stage_2_train_images/")
         self.name = "RSNADataset"
         self.phase = phase
         self.transform = SSDAugmentation(phase, cfg["min_dim"], MEANS)

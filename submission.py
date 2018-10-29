@@ -53,7 +53,7 @@ def get_prediction_str(detections, threshold):
 if __name__ == "__main__":
     # load model
     use_cuda = True
-    trained_model_path = 'weights/24oct/model.pth'
+    trained_model_path = 'weights/27oct/model.pth'
     print("Using trained model at %s" % trained_model_path)
     device = torch.device("cuda" if use_cuda else "cpu")
     if use_cuda:
@@ -70,9 +70,10 @@ if __name__ == "__main__":
     print('Finished loading model!')
 
     # load data
-    root = "data/stage_1_test_images/"
-    sample_submission_path = "data/stage_1_sample_submission.csv"
-    sub_path = "data/submission/" + str(time.time()) + trained_model_path.replace('/', '') + '/'
+    root = "data_stage2/stage_2_test_images/"
+    sample_submission_path = "data_stage2/stage_2_sample_submission.csv"
+    sub_path = "data_stage2/submission/" + str(time.time()).split('.')[0] + trained_model_path.split('.')[0][7:].replace('/', '.') + '/'
+    print('Saving predictions at %s' % sub_path)
     os.mkdir(sub_path)
     testset = TestDataset(root, sample_submission_path)
 
@@ -80,7 +81,7 @@ if __name__ == "__main__":
     num_images = len(testset)
     test_sub = pd.read_csv(sample_submission_path)
     subs = {}
-    thresholds = [0.2, 0.23, 0.27, 0.30, 0.33] # class thresholds for predicted boxes
+    thresholds = [0.2, 0.23, 0.27, 0.30, 0.33, 0.35, 0.37, 0.4, 0.45, 0.5] # class thresholds for predicted boxes
     print("Using thresholds:", thresholds)
     for i in range(len(thresholds)):
         subs[i] = test_sub.copy()

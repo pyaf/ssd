@@ -48,6 +48,7 @@ def print_time(start, string):
     diff = time.time() - start
     logger.info(string + ': %02d:%02d' % (diff // 60, diff % 60))
 
+
 def get_gt_boxes(targets):
     try:
         gt_boxes = []
@@ -58,6 +59,16 @@ def get_gt_boxes(targets):
     except:
         traceback.print_exc()
         pdb.set_trace()
+
+def adjust_learning_rate(lr, optimizer):
+    """Sets the learning rate to the initial LR decayed by 10 at every
+        specified step
+    # Adapted from PyTorch Imagenet example:
+    # https://github.com/pytorch/examples/blob/master/imagenet/main.py
+    """
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+    return optimizer
 
 
 def iter_log(phase, epoch, iteration, epoch_size, loss_l, loss_c, start):

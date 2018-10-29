@@ -6,8 +6,6 @@ import random
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from config import HOME
-
 
 def save_npy(fnames, phase):
     print('Saving npy file for %s ...' % phase)
@@ -39,7 +37,8 @@ def mkdir(path):
 
 
 if __name__ == '__main__':
-    DATA_ROOT = os.path.join(HOME, "data")
+    from config import HOME
+    DATA_ROOT = os.path.join(HOME, "data_stage2")
     NPY_ROOT = os.path.join(DATA_ROOT, "npy_data")
     mkdir(NPY_ROOT)
     CLASSES = ("Lung Opacity",)  # COMMA IS FUCKING IMPORTANT
@@ -49,8 +48,8 @@ if __name__ == '__main__':
         "No Lung Opacity / Not Normal": 1
     }
     print('Reading, gouping, spliting data...')
-    df = pd.read_csv(os.path.join(DATA_ROOT, "stage_1_train_labels.csv"))
-    class_df = pd.read_csv(os.path.join(DATA_ROOT, 'stage_1_detailed_class_info.csv'))
+    df = pd.read_csv(os.path.join(DATA_ROOT, "stage_2_train_labels.csv"))
+    class_df = pd.read_csv(os.path.join(DATA_ROOT, 'stage_2_detailed_class_info.csv'))
     df['class'] = class_df['class']
     df_groupby = df.groupby("patientId")
     df_groups = df_groupby.groups

@@ -305,7 +305,7 @@ def plot_pr_curve(
     return ax
 
 def get_mAP(phase, epoch, gt_boxes, pred_boxes, save_plot=False):
-    logger.info('Calculating mAP...')
+    logger.info('Calculating mAP for %s epoch: %d...' % (phase, epoch))
     start_time = time.time()
     ax = None
     avg_precs = []
@@ -328,7 +328,7 @@ def get_mAP(phase, epoch, gt_boxes, pred_boxes, save_plot=False):
     logger.info('avg precs: [' + ', '.join(map(str, avg_precs)) + ']')
     logger.info('iou_thrs:  ['+ ', '.join(map(str, iou_thrs)) + ']')
     diff = time.time() - start_time
-    logger.info('calculating mAP for %s epoch: %d takes %02d:%02d' % (phase, epoch, diff // 60, diff % 60))
+    logger.info('mAP for %s epoch: %d is >>>>>> %0.2f <<<<<< || %02d:%02d' % (phase, epoch, mAP, diff // 60, diff % 60))
     if save_plot:
         plt.legend(loc='upper right', title='IOU Thr', frameon=True)
         for xval in np.linspace(0.0, 1.0, 11):

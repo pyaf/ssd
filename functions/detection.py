@@ -1,8 +1,9 @@
 import pdb
 import torch
 from torch.autograd import Function
-from config import cfg, prior_data
+from config import cfg, cuda
 from .box_utils import decode, nms
+from .prior_box import PriorBox
 
 
 class Detect(Function):
@@ -21,7 +22,9 @@ class Detect(Function):
             raise ValueError('nms_threshold must be non negative.')
         self.conf_thresh = conf_thresh
         self.variance = cfg['variance']
-        
+        device = torch.device("cuda:0" if cuda else "cpu")
+        self.prior_data = PriorBox(cfg).forward().to(device)
+
 
     def forward(self, loc_data, conf_data):
         # pdb.set_trace()
@@ -35,14 +38,14 @@ class Detect(Function):
                 Shape: [1,num_priors,4]
         """
         num = loc_data.size(0)  # batch size
-        num_priors = prior_data.size(0)
+        num_priors = self.prior_data.size(0)
         output = torch.zeros(num, self.num_classes, self.top_k, 5)
         # pdb.set_trace()
         conf_preds = conf_data.view(num, num_priors, self.num_classes).transpose(2, 1)
 
         # Decode predictions into bboxes.
         for i in range(num):
-            decoded_boxes = decode(loc_data[i], prior_data, self.variance)
+            decoded_boxes = decode(loc_data[i], self.prior_data, self.variance)
             # For each class, perform nms
             conf_scores = conf_preds[i].clone()
 

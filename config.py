@@ -1,6 +1,5 @@
 import torch
 from os.path import dirname, abspath
-from functions.prior_box import PriorBox
 
 HOME = dirname(abspath(__file__))
 print('HOME:', HOME)
@@ -11,7 +10,7 @@ COLORS = ((255, 0, 0, 128), (0, 255, 0, 128), (0, 0, 255, 128),
 
 MEANS = (104, 117, 123)
 
-# SSD300 CONFIGS
+cuda = torch.cuda.is_available()
 
 cfg = {
     'name': 'RSNA',
@@ -40,9 +39,6 @@ cfg = {
     }
 }
 
-cuda = torch.cuda.is_available()
-device = torch.device("cuda:0" if cuda else "cpu")
-prior_data = PriorBox(cfg).forward().to(device)
 
 
 ''' BEFORE 24 oct

@@ -11,7 +11,7 @@ from ssd import build_ssd
 import torch.nn as nn
 from tensorboard_logger import configure, log_value
 from functions import MultiBoxLoss, Detect
-from utils import weights_init, iter_log, epoch_log, logger, get_pred_boxes, get_gt_boxes, print_time, get_mAP
+from utils import weights_init, iter_log, epoch_log, logger, get_pred_boxes, get_gt_boxes, print_time, get_mAP, adjust_learning_rate
 from config import cfg, HOME
 from dataloader import provider
 from shutil import copyfile
@@ -20,7 +20,7 @@ from threading import Thread, active_count
 
 class Model(object):
     def __init__(self):
-        folder = 'weights/24oct'
+        folder = 'weights/27oct'
         self.resume = False
         self.num_workers = 8
         self.batch_size = {'train': 32, 'val': 8}
@@ -42,11 +42,13 @@ class Model(object):
         self.save_folder = os.path.join(HOME, folder)
         self.basenet_path = os.path.join(HOME, "weights/vgg16_reducedfc.pth")
         self.model_path = os.path.join(self.save_folder, "model.pth")
+        self.ckpt_path = os.path.join(self.save_folder, "ckpt.pth")
         self.tensor_type = "torch.cuda.FloatTensor" if self.cuda else "torch.FloatTensor"
         torch.set_default_tensor_type(self.tensor_type)
         self.softmax = nn.Softmax(dim=-1)
         self.detect = Detect(cfg['num_classes'], self.top_k, self.CLS_THRESH, self.NMS_THRESH)
         self.net = build_ssd("train", cfg["min_dim"], cfg["num_classes"])
+        self.net = nn.DataParallel(self.net)
         self.optimizer = optim.SGD(self.net.parameters(), lr=self.lr, momentum=self.momentum, weight_decay=self.weight_decay)
         self.criterion = MultiBoxLoss(cfg["num_classes"], self.IOU_THRESH, self.NEG_POS_RATIO, self.cuda)
         self.log = logger.info
@@ -54,7 +56,6 @@ class Model(object):
             self.resume_net()
         else:
             self.initialize_net()
-        self.net = nn.DataParallel(self.net)
         self.net = self.net.to(self.device)
         if self.cuda:
             cudnn.benchmark = True
@@ -68,7 +69,7 @@ class Model(object):
     def resume_net(self):
         self.resume_path = os.path.join(self.save_folder, "ckpt.pth")
         self.log("Resuming training, loading {} ...".format(self.resume_path))
-        state = torch.load(self.resume_path)
+        state = torch.load(self.resume_path, map_location=lambda storage, loc: storage)
         self.net.load_state_dict(state["state_dict"])
         self.optimizer.load_state_dict(state["optimizer"])
         # best_loss = state["best_loss"]
@@ -78,12 +79,12 @@ class Model(object):
     def initialize_net(self):
         vgg_weights = torch.load(self.basenet_path)
         self.log("Loading base network...")
-        self.net.vgg.load_state_dict(vgg_weights)
+        self.net.module.vgg.load_state_dict(vgg_weights)
         self.log("Initializing weights...")
         # self.net.vgg.apply(weights_init)  # incase training from scratch, tried it a few times, doesn't help much
-        self.net.extras.apply(weights_init)
-        self.net.loc.apply(weights_init)
-        self.net.conf.apply(weights_init)
+        self.net.module.extras.apply(weights_init)
+        self.net.module.loc.apply(weights_init)
+        self.net.module.conf.apply(weights_init)
 
     def forward(self, images, targets):
         images = images.to(self.device)
@@ -102,7 +103,9 @@ class Model(object):
         running_l_loss, running_c_loss = 0, 0
         total_iters = len(dataloader)
         total_images = dataloader.dataset.num_samples
-        calc_train_mAP = epoch and epoch % 3 == 0
+        # calc_train_mAP = epoch and epoch % 5 == 0
+        calc_train_mAP = epoch in [10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+
         # t = time.time()
         for iteration, batch in enumerate(dataloader):
             # print('time taken:', (time.time() - t), ' secs')
@@ -139,23 +142,24 @@ class Model(object):
 
     def log_mAP(self, phase, epoch, gt_boxes, pred_boxes):
         mAP = get_mAP(phase, epoch, gt_boxes, pred_boxes)
-        self.log('%s epoch: %d  || mAP: %0.2f \n' % (phase, epoch, mAP))
         log_value(phase + " mAP", mAP, epoch)
         return mAP
 
     def update_boxes(self, fnames, outputs, targets):
-        # print('updating boxes...')
-        # pdb.set_trace()
         outputs[1] = self.softmax(outputs[1])
         detections = self.detect(* outputs)
         for i, name in enumerate(fnames):  # len(images) no batch_size (last iter issue)
             self.pred_boxes[name] = get_pred_boxes(detections[i])
             self.gt_boxes[name] = get_gt_boxes(targets[i])
-        # print('done')
 
     def train(self):
         t0 = time.time()
         for epoch in range(self.start_epoch, self.num_epochs):
+            if epoch in [10, 50, 100]:
+                self.log('Adjusting learning rate...')
+                self.log('New learning rate: %f' % self.lr)
+                self.lr /= 10
+                self.optimizer = adjust_learning_rate(self.lr, self.optimizer)
             t_epoch_start = time.time()
             self.iterate(epoch, 'train')
             val_loss, mAP = self.iterate(epoch, 'val')
@@ -166,17 +170,16 @@ class Model(object):
                 "optimizer": self.optimizer.state_dict(),
             }
             if mAP > self.best_mAP:
-                self.log("New optimal found, saving state..")
+                self.log("******** New optimal found, saving state ********")
                 state["best_mAP"] = self.best_mAP = mAP
-                torch.save(state, os.path.join(self.save_folder, "model.pth"))
-            torch.save(state, os.path.join(self.save_folder, "ckpt.pth"))
+                torch.save(state, self.model_path)
+            torch.save(state, self.ckpt_path)
             if epoch and epoch % 10 == 0:
-                copyfile(self.model_path, os.path.join(self.save_folder, "model%d.pth" % epoch))
+                copyfile(self.ckpt_path, os.path.join(self.save_folder, "ckpt%d.pth" % epoch))
+
             print_time(t_epoch_start, 'Time taken by the epoch')
             print_time(t0, 'Total time taken so far')
-            self.log("=" * 50 + "\n")
-
-
+            self.log("\n" + "=" * 60 + "\n")
 
 
 if __name__ == '__main__':
